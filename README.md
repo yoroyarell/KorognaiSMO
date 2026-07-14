@@ -5,8 +5,6 @@ A self-contained, browser-based reference demo of a Service Management & Orchest
 🔗 **Live demo:** https://smo.korognai.net
 🔗 **Repo:** https://github.com/yoroyarell/smo-demo
 
-> Adjust the live-demo URL and repo path above to match your own GitHub username and domain before publishing — see [Deploying this yourself](#deploying-this-yourself) below.
-
 ---
 
 ## Why this exists

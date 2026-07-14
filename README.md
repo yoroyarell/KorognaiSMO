@@ -2,7 +2,7 @@
 
 A self-contained, browser-based reference demo of a Service Management & Orchestration (SMO) platform for O-RAN networks — built to show, not just describe, how FCAPS assurance, multi-vendor RAN integration, cloud & lifecycle automation, closed-loop rApp orchestration, Near-RT RIC/xApp control, network slicing, and security posture actually fit together in one platform.
 
-🔗 **Live demo:** https://smo.korognai.net
+🔗 **Live demo:** http://smo.korognai.net
 🔗 **Repo:** https://github.com/yoroyarell/smo-demo
 
 ---

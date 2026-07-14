@@ -282,6 +282,7 @@ input[type=text],select{
     <div class="tab" data-tab="zerotouch"><span class="term below" data-tip="Getting a new cell site up and running with minimal manual work — detect, configure, verify, all automatically.">Zero-Touch Rollout</span></div>
     <div class="tab" data-tab="trust"><span class="term below" data-tip="How the platform proves it's secure — not just claims it, but shows evidence.">Security &amp; Trust</span></div>
     <div class="tab" data-tab="scorecard"><span class="term below" data-tip="A scored evaluation of how open and vendor-neutral this platform actually is, against six industry-standard principles.">Openness Scorecard</span></div>
+    <div class="tab" data-tab="docs"><span class="term below" data-tip="A full written explanation of every tab, every term, and every simulated scenario in this demo.">Documentation</span></div>
   </div>
 
   <!-- ============ OVERVIEW ============ -->
@@ -304,9 +305,8 @@ input[type=text],select{
     <div class="card" style="margin-bottom:16px;">
       <h3>What this SMO covers</h3>
       <div style="font-size:12.5px;color:var(--muted);line-height:1.6;">
-        Grouped by function, mapped to the standard SMO requirement domains — vendor/architecture, interfaces, FCAPS assurance,
-        cloud &amp; automation, intelligence (Non-RT RIC / rApps / AI-ML), slicing &amp; conflict, and security &amp; compliance.
-        Click a cluster to jump to it; clusters marked <span class="pill fcfs">documented</span> are covered narratively rather than as a live interactive build.
+        Grouped by function — RAN architecture, interfaces, FCAPS assurance, cloud &amp; automation, intelligence
+        (Non-RT RIC / Near-RT RIC / rApps / AI-ML), slicing &amp; conflict, and security. Click a cluster to jump straight to it.
       </div>
     </div>
 
@@ -694,6 +694,153 @@ input[type=text],select{
       <button class="btn ghost" style="margin-bottom:16px;" onclick="computeLiveScores()">Recalculate from live demo state</button>
       <div id="scorecardBars"></div>
       <div class="kpi ok" style="margin-top:16px;"><span class="val" id="overallScore">--</span><span class="unit">/ 100 composite openness score</span></div>
+    </div>
+  </div>
+
+  <!-- ============ DOCUMENTATION ============ -->
+  <div class="panel" id="panel-docs">
+    <div class="card" style="margin-bottom:16px;border-color:var(--amber);">
+      <h3 style="color:var(--amber);">About this documentation</h3>
+      <div style="font-size:12.5px;color:var(--text);line-height:1.6;">
+        A full written explanation of every tab, every term, and every simulated scenario in this demo — for anyone who wants
+        to understand what they're looking at without someone walking them through it live. Everything here is synthetic
+        demonstration; there is no live network behind it, and no vendor's proprietary material is used anywhere in it.
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h3>Jump to a section</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn ghost" onclick="document.getElementById('doc-glossary').scrollIntoView({behavior:'smooth'})">Glossary</button>
+        <button class="btn ghost" onclick="document.getElementById('doc-tabs').scrollIntoView({behavior:'smooth'})">Tab-by-tab guide</button>
+        <button class="btn ghost" onclick="document.getElementById('doc-scenarios').scrollIntoView({behavior:'smooth'})">Scenario reasoning</button>
+        <button class="btn ghost" onclick="document.getElementById('doc-principles').scrollIntoView({behavior:'smooth'})">Design principles</button>
+        <button class="btn ghost" onclick="document.getElementById('doc-acronyms').scrollIntoView({behavior:'smooth'})">Acronym index</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;" id="doc-glossary">
+      <h3>Glossary — core concepts</h3>
+      <h4 style="color:var(--amber);font-size:12px;margin:14px 0 6px;">The physical radio network</h4>
+      <table style="width:100%;border-collapse:collapse;font-size:11.5px;">
+        <tr style="font-size:10.5px;color:var(--faint);text-transform:uppercase;"><td style="padding:5px 4px;">Term</td><td>Meaning</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">RU</td><td style="padding:6px 4px;">Radio Unit — the physical hardware at the antenna. Converts digital signals into radio waves and back.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">DU</td><td style="padding:6px 4px;">Distributed Unit — handles time-critical, millisecond-scale processing, usually close to the tower.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">CU</td><td style="padding:6px 4px;">Centralized Unit — handles less time-critical processing, can serve many towers from one place.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">Fronthaul / Midhaul / Backhaul</td><td style="padding:6px 4px;">The three transport links: RU↔DU, DU↔CU, CU↔Core — each with progressively looser timing requirements.</td></tr>
+      </table>
+
+      <h4 style="color:var(--amber);font-size:12px;margin:14px 0 6px;">Management &amp; intelligence layers</h4>
+      <table style="width:100%;border-collapse:collapse;font-size:11.5px;">
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);width:110px;">SMO</td><td style="padding:6px 4px;">Service Management &amp; Orchestration — the top-level management layer overseeing the whole radio network.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">Non-RT RIC</td><td style="padding:6px 4px;">The slower (&gt;1s) intelligence layer inside the SMO. Hosts rApps. Longer-term optimization and AI/ML training.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">Near-RT RIC</td><td style="padding:6px 4px;">A separate platform, closer to the radio, making real-time decisions (10ms–1s). Hosts xApps.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">rApp / xApp</td><td style="padding:6px 4px;">An automated behavior on the Non-RT RIC (rApp, slower/more sophisticated) or Near-RT RIC (xApp, faster/simpler).</td></tr>
+      </table>
+
+      <h4 style="color:var(--amber);font-size:12px;margin:14px 0 6px;">Interfaces</h4>
+      <table style="width:100%;border-collapse:collapse;font-size:11.5px;">
+        <tr style="font-size:10.5px;color:var(--faint);text-transform:uppercase;"><td style="padding:5px 4px;">Interface</td><td>Connects</td><td>Purpose</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">O-FH</td><td style="padding:6px 4px;">RU ↔ DU</td><td style="padding:6px 4px;">Standardized fronthaul (split 7.2x) — enables multi-vendor RU/DU.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">F1</td><td style="padding:6px 4px;">DU ↔ CU</td><td style="padding:6px 4px;">Midhaul, split into F1-C (control) and F1-U (user plane).</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">E1</td><td style="padding:6px 4px;">CU-CP ↔ CU-UP</td><td style="padding:6px 4px;">Separates control and user plane within the CU.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">E2</td><td style="padding:6px 4px;">Near-RT RIC ↔ RU/DU/CU</td><td style="padding:6px 4px;">Real-time data up, control down — the xApp channel.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">A1</td><td style="padding:6px 4px;">Non-RT RIC ↔ Near-RT RIC</td><td style="padding:6px 4px;">AI/ML-informed policy and enrichment data, passed down.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">O1</td><td style="padding:6px 4px;">SMO ↔ all RAN elements</td><td style="padding:6px 4px;">FCAPS — fault, config, accounting, performance, security.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">O2</td><td style="padding:6px 4px;">SMO ↔ O-Cloud</td><td style="padding:6px 4px;">Cloud infrastructure and workload orchestration.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">R1</td><td style="padding:6px 4px;">rApps ↔ Non-RT RIC</td><td style="padding:6px 4px;">How an rApp registers and receives the data it needs.</td></tr>
+      </table>
+
+      <h4 style="color:var(--amber);font-size:12px;margin:14px 0 6px;">Radio &amp; performance terms</h4>
+      <table style="width:100%;border-collapse:collapse;font-size:11.5px;">
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);width:110px;">PRB</td><td style="padding:6px 4px;">Physical Resource Block — the basic unit of radio capacity a tower allocates. High utilization = a busy/crowded tower.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">Handover (HO)</td><td style="padding:6px 4px;">A phone switching from one tower's coverage to another's while moving. A failure often means a dropped call or lag.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">Network Availability</td><td style="padding:6px 4px;">Percentage of time the network is up and reachable — cannot exceed 100%, since it's a percentage of uptime.</td></tr>
+      </table>
+
+      <h4 style="color:var(--amber);font-size:12px;margin:14px 0 6px;">Slicing, cloud, security &amp; business terms</h4>
+      <table style="width:100%;border-collapse:collapse;font-size:11.5px;">
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);width:110px;">NSSI</td><td style="padding:6px 4px;">Network Slice Subnet Instance — the RAN's piece of a network slice.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">SLA</td><td style="padding:6px 4px;">Service Level Agreement — a measurable, contractual promise about network quality.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">CNF / NF Lifecycle</td><td style="padding:6px 4px;">Cloud-native Network Function; its full lifecycle: instantiate, heal, scale, upgrade, terminate.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">Zero-trust / CIS / SBOM</td><td style="padding:6px 4px;">Zero-trust: nothing trusted automatically, every request checked. CIS: a published secure-config checklist. SBOM: an itemized ingredients list for software.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">TCO / OPEX / MTTR</td><td style="padding:6px 4px;">Total Cost of Ownership (full lifecycle cost); Operating Expenses (ongoing running cost); Mean Time to Resolve.</td></tr>
+      </table>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;" id="doc-tabs">
+      <h3>Tab-by-tab guide</h3>
+      <p style="font-size:11.5px;color:var(--muted);">A short explanation of what each tab shows and why it exists.</p>
+      <table style="width:100%;border-collapse:collapse;font-size:11.5px;">
+        <tr style="font-size:10.5px;color:var(--faint);text-transform:uppercase;"><td style="padding:5px 4px;">Tab</td><td>What it shows</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 4px;color:var(--amber);">Overview</td><td style="padding:6px 4px;">Plain-language landing page, executive KPIs, and a clickable grid of every functional cluster.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 4px;color:var(--amber);">RAN Architecture</td><td style="padding:6px 4px;">Interactive RU/DU/CU diagram with the full interface map; hover any interface to highlight it in both the diagram and the reference table.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 4px;color:var(--amber);">FCAPS Monitor</td><td style="padding:6px 4px;">Live fault, performance, configuration, trace, and topology/inventory views — core day-to-day network monitoring.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 4px;color:var(--amber);">Closed Loop</td><td style="padding:6px 4px;">The centerpiece: a multi-vendor cell ring (plus a 10,000-cell fleet heatmap) driven by real rApp logic — energy saving, mobility robustness, load balancing, outage compensation. See Scenario Reasoning below.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 4px;color:var(--amber);">Near-RT RIC</td><td style="padding:6px 4px;">The fast (10ms–1s) control loop over E2, running xApps — deliberately contrasted against the slower Non-RT RIC loop.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 4px;color:var(--amber);">rApp Catalog</td><td style="padding:6px 4px;">Toggleable rApps, each running genuine reference logic, showing which data services each one consumes.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 4px;color:var(--amber);">Import rApp</td><td style="padding:6px 4px;">Validates and onboards a JSON rApp descriptor — genuine logic for recognized algorithms, an honest monitoring-only stub for anything else.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 4px;color:var(--amber);">Slice Lifecycle</td><td style="padding:6px 4px;">Full NSSI lifecycle (create → modify → monitor/assure → decommission) plus SLA-vs-intent visualization.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 4px;color:var(--amber);">Conflict Log</td><td style="padding:6px 4px;">Live rApp-vs-rApp conflict detection and three resolution strategies: Allow, First-Come-First-Served, Priority-Based Override.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 4px;color:var(--amber);">Data &amp; Openness</td><td style="padding:6px 4px;">A data coverage matrix, a disconnect/reconnect resilience simulator, and self-serve data-routing config.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 4px;color:var(--amber);">Cloud &amp; NF Lifecycle</td><td style="padding:6px 4px;">Triggerable network-function lifecycle actions and infrastructure visibility.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 4px;color:var(--amber);">Zero-Touch Rollout</td><td style="padding:6px 4px;">A 13-step governed commissioning pipeline: onboard → discover → deploy → commission → validate → audit.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 4px;color:var(--amber);">Security &amp; Trust</td><td style="padding:6px 4px;">Evidence-based security posture — proof of controls working, not just claims — plus a live artifact-verification log.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td style="padding:6px 4px;color:var(--amber);">Openness Scorecard</td><td style="padding:6px 4px;">Six industry principles, each pre-populated from real state elsewhere in the demo, freely adjustable, with a recalculate button.</td></tr>
+      </table>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;" id="doc-scenarios">
+      <h3>Scenario reasoning — the four Closed Loop buttons</h3>
+      <div class="scenario-doc" style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;margin-bottom:10px;">
+        <strong style="color:var(--amber);">Simulate load spike</strong>
+        <p style="font-size:11.5px;color:var(--muted);margin:6px 0;">Sets a random cell to 88% PRB utilization and "congested" state — simulating a sudden demand surge (a large event, a viral moment). If Mobility Load Balancing is enabled, it detects utilization above its 75% threshold and automatically offloads idle-mode users to a neighboring, less-busy cell. Without this, every user on that cell suffers degraded service until an engineer manually intervenes.</p>
+      </div>
+      <div class="scenario-doc" style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;margin-bottom:10px;">
+        <strong style="color:var(--cyan);">Simulate sleeping cell</strong>
+        <p style="font-size:11.5px;color:var(--muted);margin:6px 0;">Sets a random cell to 8% PRB utilization — simulating a mostly-idle tower (a business district at 3am, a quiet rural site overnight). If Energy Saving Management is enabled, it detects sustained low utilization below its 20% threshold and applies a micro cell-sleep mode. This is the single most quantifiable value case for rApp automation in the industry: radio equipment running at full power to serve almost no users overnight is pure wasted electricity cost.</p>
+      </div>
+      <div class="scenario-doc" style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;margin-bottom:10px;">
+        <strong style="color:var(--danger);">Simulate cell outage</strong>
+        <p style="font-size:11.5px;color:var(--muted);margin:6px 0;">Sets a random cell to "alarm" state — simulating a hard site failure (power loss, hardware fault, fiber cut). If Cell Outage Compensation is enabled, neighboring cells automatically widen their coverage via antenna tilt adjustment to partially fill the resulting gap, while the underlying fault is separately raised for a technician to physically repair. Automated compensation reduces customer impact in the window before a human fixes the root cause — it doesn't replace that repair.</p>
+      </div>
+      <div class="scenario-doc" style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;">
+        <strong style="color:var(--muted);">Reset to nominal</strong>
+        <p style="font-size:11.5px;color:var(--muted);margin:6px 0;">Regenerates all 12 cells back to healthy baseline values — a demo-usability feature to cleanly return to a calm starting state between scenarios, styled as a neutral action since it isn't injecting any condition.</p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;" id="doc-principles">
+      <h3>Design principles</h3>
+      <ul style="font-size:11.5px;color:var(--muted);line-height:1.7;padding-left:20px;">
+        <li><strong style="color:var(--text);">One file, no backend.</strong> Everything runs client-side — nothing depends on a live connection during a demo.</li>
+        <li><strong style="color:var(--text);">Honest about synthetic data.</strong> Every screen is labeled as simulation; an imported rApp with unrecognized logic is labeled a monitoring-only stub rather than faked.</li>
+        <li><strong style="color:var(--text);">Grounded in public standards only.</strong> Terminology and behavior come from O-RAN Alliance, 3GPP, TM Forum, NIST, and CIS public material — no proprietary vendor documentation or confidential material anywhere.</li>
+        <li><strong style="color:var(--text);">Aggregation over enumeration at scale.</strong> The 10,000-cell fleet view uses a canvas heatmap and a ranked exceptions list instead of individual dots, because that's how real monitoring tools actually have to work at scale.</li>
+        <li><strong style="color:var(--text);">Executive readability alongside technical depth.</strong> Plain-language framing and hover tooltips throughout, without diluting the technical detail available to someone who wants it.</li>
+        <li><strong style="color:var(--text);">Visible confirmation of every action.</strong> Button flashes, toast notifications, and a shockwave highlight confirm every triggered scenario immediately, rather than relying on a scrolling log.</li>
+      </ul>
+    </div>
+
+    <div class="card" id="doc-acronyms">
+      <h3>Acronym index</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:11px;">
+        <tr style="font-size:10px;color:var(--faint);text-transform:uppercase;"><td style="padding:4px;">Acronym</td><td>Full term</td><td style="padding:4px;">Acronym</td><td>Full term</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:5px 4px;">SMO</td><td style="padding:5px 4px;">Service Management &amp; Orchestration</td><td class="mono" style="padding:5px 4px;">CNF</td><td style="padding:5px 4px;">Cloud-native Network Function</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:5px 4px;">RIC</td><td style="padding:5px 4px;">RAN Intelligent Controller</td><td class="mono" style="padding:5px 4px;">O2-DMS</td><td style="padding:5px 4px;">O2 Deployment Management Service</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:5px 4px;">RAN</td><td style="padding:5px 4px;">Radio Access Network</td><td class="mono" style="padding:5px 4px;">PnP</td><td style="padding:5px 4px;">Plug-and-Play</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:5px 4px;">RU/DU/CU</td><td style="padding:5px 4px;">Radio/Distributed/Centralized Unit</td><td class="mono" style="padding:5px 4px;">SBOM</td><td style="padding:5px 4px;">Software Bill of Materials</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:5px 4px;">O-FH</td><td style="padding:5px 4px;">Open Fronthaul</td><td class="mono" style="padding:5px 4px;">NIST</td><td style="padding:5px 4px;">National Institute of Standards &amp; Technology</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:5px 4px;">FCAPS</td><td style="padding:5px 4px;">Fault, Config, Accounting, Performance, Security</td><td class="mono" style="padding:5px 4px;">CIS</td><td style="padding:5px 4px;">Center for Internet Security</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:5px 4px;">PRB</td><td style="padding:5px 4px;">Physical Resource Block</td><td class="mono" style="padding:5px 4px;">TCO</td><td style="padding:5px 4px;">Total Cost of Ownership</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:5px 4px;">HO</td><td style="padding:5px 4px;">Handover</td><td class="mono" style="padding:5px 4px;">OPEX</td><td style="padding:5px 4px;">Operating Expenses</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:5px 4px;">SON</td><td style="padding:5px 4px;">Self-Organizing Network</td><td class="mono" style="padding:5px 4px;">ESM</td><td style="padding:5px 4px;">Energy Saving Management</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:5px 4px;">NSSI</td><td style="padding:5px 4px;">Network Slice Subnet Instance</td><td class="mono" style="padding:5px 4px;">ANR</td><td style="padding:5px 4px;">Automatic Neighbor Relation</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:5px 4px;">S-NSSAI</td><td style="padding:5px 4px;">Slice Selection Assistance Info</td><td class="mono" style="padding:5px 4px;">MRO</td><td style="padding:5px 4px;">Mobility Robustness Optimization</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:5px 4px;">SLA</td><td style="padding:5px 4px;">Service Level Agreement</td><td class="mono" style="padding:5px 4px;">MLB</td><td style="padding:5px 4px;">Mobility Load Balancing</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:5px 4px;">5QI</td><td style="padding:5px 4px;">5G QoS Identifier</td><td class="mono" style="padding:5px 4px;">COC</td><td style="padding:5px 4px;">Cell Outage Compensation</td></tr>
+        <tr><td class="mono" style="padding:5px 4px;">NF / LCM</td><td style="padding:5px 4px;">Network Function / Lifecycle Mgmt</td><td class="mono" style="padding:5px 4px;">PCI</td><td style="padding:5px 4px;">Physical Cell Identity</td></tr>
+      </table>
     </div>
   </div>
 
@@ -1302,12 +1449,14 @@ function toggleOutage(){
 }
 logLine('opennessLog','Streaming FM/PM/CM/inventory to operator system of record — normalized schema','info');
 
+let selfServeRouteApplied = false;
 function applyRoute(){
   const domain = document.getElementById('routeDomain').value;
   const endpoint = document.getElementById('routeEndpoint').value;
   const status = document.getElementById('routeStatus');
   status.style.display='block';
   status.textContent = `${domain} now routed to ${endpoint} — applied immediately, no maintenance window, no vendor ticket.`;
+  selfServeRouteApplied = true;
 }
 
 /* ============================================================
@@ -1446,7 +1595,7 @@ const PRINCIPLES = [
   {name:'Trustworthy automation', val:50, source:'% of active rApps running genuine (non-stub) reference logic'},
   {name:'Security by evidence', val:50, source:'% of Security & Trust controls currently showing evidence'},
   {name:'Safe autonomy (conflict-aware)', val:50, source:'Strength of the active conflict-resolution strategy (Allow → FCFS → Priority)'},
-  {name:'Freedom from lock-in', val:50, source:'% of this SMO\'s functional clusters that are actually interactive vs. documentation-only'},
+  {name:'Freedom from lock-in', val:50, source:'Whether you\'ve demonstrated self-serve data routing (Data & Openness tab) without a vendor ticket or maintenance window'},
 ];
 function computeLiveScores(){
   // 1. Openness & data ownership — coverage matrix
@@ -1470,9 +1619,8 @@ function computeLiveScores(){
   const strat = document.getElementById('strategySelect') ? document.getElementById('strategySelect').value : 'fcfs';
   PRINCIPLES[4].val = {allow:40, fcfs:75, priority:90}[strat] ?? 70;
 
-  // 6. Freedom from lock-in — proportion of clusters that are actually interactive, not documentation-only
-  const interactiveClusters = CLUSTERS.filter(c=>c.tag==='interactive').length;
-  PRINCIPLES[5].val = Math.round(100*interactiveClusters/CLUSTERS.length);
+  // 6. Freedom from lock-in — has the user demonstrated self-serve data control this session?
+  PRINCIPLES[5].val = selfServeRouteApplied ? 90 : 55;
 
   renderScorecard();
 }
@@ -1589,25 +1737,21 @@ logLine('e2Log','E2 session established — Near-RT RIC subscribed to real-time 
    OVERVIEW — CLUSTER GRID
    ============================================================ */
 const CLUSTERS = [
-  {name:'RAN Architecture: RU/DU/CU & Interfaces', cats:'Foundational', biz:'The map that shows where every vendor\'s box sits and how they talk to each other — the first thing any RAN architect draws on a whiteboard.', desc:'Functional split (RU/DU/CU), fronthaul/midhaul/backhaul, and the full O1/O2/A1/E2 interface set.', tab:'ranarch', tag:'interactive'},
-  {name:'Vendor, Roadmap & Standards', cats:'Categories 1–2', biz:'De-risks the investment — confirms the supplier has a credible plan and won\'t strand the network on a dead-end technology.', desc:'Commercial profile, references, multi-year roadmap, and O-RAN/3GPP/TMF/ETSI standards alignment.', tab:null, tag:'documented'},
-  {name:'SMO Architecture & Interfaces', cats:'Categories 3–6', biz:'Keeps the network open — no single vendor can lock the operator in or hold data hostage.', desc:'Modular framework, O1/O2/A1/R1 interfaces, SME/DME, northbound OSS/BSS integration and internal data models.', tab:'openness', tag:'interactive'},
-  {name:'FCAPS & Assurance', cats:'Categories 7–12', biz:'The early-warning system — catches problems before customers call in to complain.', desc:'Fault, performance, configuration, trace and topology/inventory management, plus the data lake feeding AI/ML.', tab:'fcaps', tag:'interactive'},
-  {name:'Cloud & Automation', cats:'Categories 13–15', biz:'Fewer truck-rolls and manual site visits — new capacity and sites go live faster, with less labor cost.', desc:'O-Cloud infrastructure management, NF orchestration/lifecycle, zero-touch provisioning and CI/CD.', tab:'cloud', tag:'interactive'},
-  {name:'Non-RT RIC: rApps, AI/ML, Agentic', cats:'Categories 16–21', biz:'The network tunes and heals itself continuously, and can explain its own decisions in plain language — better customer experience without adding headcount.', desc:'Optimization & self-healing rApps, energy saving, rApp LCM, the Non-RT RIC framework, AI/ML lifecycle and agentic AI with human-oversight narration.', tab:'loop', tag:'interactive'},
-  {name:'Near-RT RIC: xApps & Real-Time Control', cats:'The other RIC', biz:'Handles the millisecond-scale decisions that are simply too fast for a human — or even the Non-RT RIC — to make in time.', desc:'10ms–1s control loop over E2: dynamic spectrum sharing, real-time load balancing, interference mitigation, QoS-aware scheduling.', tab:'nearrt', tag:'interactive'},
-  {name:'Slicing, Conflict & Intent', cats:'Categories 22–24', biz:'Lets the operator sell premium, guaranteed-quality services (like enterprise 5G) with confidence they\'ll hold up.', desc:'RAN slice lifecycle and SLA assurance, rApp/SMOS conflict detection & resolution, intent-based management.', tab:'slice', tag:'interactive'},
-  {name:'GUI, Cloud-Native, Hosting & Reliability', cats:'Categories 25–28', biz:'One screen for operations staff instead of a dozen tools — faster training, fewer mistakes.', desc:'Unified operator GUI, microservices/Kubernetes architecture, hosting scenarios, HA/DR targets.', tab:null, tag:'documented'},
-  {name:'Security, Integration & Support', cats:'Categories 29–31', biz:'Protects the network and the brand from breaches, with evidence to show regulators and auditors.', desc:'Zero-trust access, supply-chain integrity, system integration services, dimensioning, support & training.', tab:'trust', tag:'interactive'},
+  {name:'RAN Architecture: RU/DU/CU & Interfaces', biz:'The map that shows where every vendor\'s box sits and how they talk to each other — the first thing any RAN architect draws on a whiteboard.', desc:'Functional split (RU/DU/CU), fronthaul/midhaul/backhaul, and the full O1/O2/A1/E2 interface set.', tab:'ranarch'},
+  {name:'SMO Architecture & Interfaces', biz:'Keeps the network open — no single vendor can lock the operator in or hold data hostage.', desc:'Modular framework, O1/O2/A1/R1 interfaces, SME/DME, northbound OSS/BSS integration and internal data models.', tab:'openness'},
+  {name:'FCAPS & Assurance', biz:'The early-warning system — catches problems before customers call in to complain.', desc:'Fault, performance, configuration, trace and topology/inventory management, plus the data lake feeding AI/ML.', tab:'fcaps'},
+  {name:'Cloud & Automation', biz:'Fewer truck-rolls and manual site visits — new capacity and sites go live faster, with less labor cost.', desc:'O-Cloud infrastructure management, NF orchestration/lifecycle, zero-touch provisioning and CI/CD.', tab:'cloud'},
+  {name:'Non-RT RIC: rApps, AI/ML, Agentic', biz:'The network tunes and heals itself continuously, and can explain its own decisions in plain language — better customer experience without adding headcount.', desc:'Optimization & self-healing rApps, energy saving, rApp LCM, the Non-RT RIC framework, AI/ML lifecycle and agentic AI with human-oversight narration.', tab:'loop'},
+  {name:'Near-RT RIC: xApps & Real-Time Control', biz:'Handles the millisecond-scale decisions that are simply too fast for a human — or even the Non-RT RIC — to make in time.', desc:'10ms–1s control loop over E2: dynamic spectrum sharing, real-time load balancing, interference mitigation, QoS-aware scheduling.', tab:'nearrt'},
+  {name:'Slicing, Conflict & Intent', biz:'Lets the operator sell premium, guaranteed-quality services (like enterprise 5G) with confidence they\'ll hold up.', desc:'RAN slice lifecycle and SLA assurance, rApp/SMOS conflict detection & resolution, intent-based management.', tab:'slice'},
+  {name:'Security, Integration & Support', biz:'Protects the network and the brand from breaches, with evidence to show regulators and auditors.', desc:'Zero-trust access, supply-chain integrity, system integration services, dimensioning, support & training.', tab:'trust'},
 ];
 function renderClusters(){
   document.getElementById('clusterGrid').innerHTML = CLUSTERS.map(c=>`
-    <div class="rapp-card" style="${c.tab?'cursor:pointer;':''}" ${c.tab?`onclick="goToTab('${c.tab}')"`:''}>
-      <div class="cat">${c.cats}</div>
+    <div class="rapp-card" style="cursor:pointer;" onclick="goToTab('${c.tab}')">
       <div class="name">${c.name}</div>
       <div class="desc" style="color:var(--text);font-weight:500;margin-bottom:4px;">${c.biz}</div>
       <div class="desc" style="font-size:11px;">${c.desc}</div>
-      <span class="pill ${c.tag==='interactive'?'allow':'fcfs'}">${c.tag==='interactive'?'interactive in this build':'documented'}</span>
     </div>`).join('');
 }
 renderClusters();

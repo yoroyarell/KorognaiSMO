@@ -129,6 +129,10 @@ svg text{font-family:'IBM Plex Mono',monospace;}
 .btn:hover{filter:brightness(1.08);}
 .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--border);}
 .btn.ghost:hover{border-color:var(--faint);}
+.btn.info{background:var(--cyan);color:#062522;}
+.btn.info:hover{filter:brightness(1.08);}
+.btn.danger{background:var(--danger);color:#2a0d0b;}
+.btn.danger:hover{filter:brightness(1.08);}
 .btn:disabled{opacity:.4;cursor:not-allowed;}
 
 .rapp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;}
@@ -192,6 +196,26 @@ input[type=text],select{
 .term.below:hover::after{bottom:auto;top:135%;}
 .term.below:hover::before{bottom:auto;top:120%;border-top-color:transparent;border-bottom-color:var(--border);}
 .tab.active .term:hover{color:#1a1204;border-bottom-color:#1a1204;}
+
+#toastContainer{position:fixed;top:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast{
+  background:var(--surface-2);border:1px solid var(--border);border-left:3px solid var(--amber);
+  border-radius:6px;padding:11px 16px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;
+  color:var(--text);box-shadow:0 8px 24px rgba(0,0,0,.5);min-width:240px;max-width:320px;
+  animation:toastIn .25s ease, toastOut .35s ease 2.4s forwards;
+}
+.toast.warn{border-left-color:var(--amber);}
+.toast.danger{border-left-color:var(--danger);}
+.toast.info{border-left-color:var(--cyan);}
+@keyframes toastIn{from{opacity:0;transform:translateX(24px);}to{opacity:1;transform:translateX(0);}}
+@keyframes toastOut{to{opacity:0;transform:translateX(24px);}}
+
+@keyframes btnFlash{
+  0%{box-shadow:0 0 0 0 rgba(79,209,197,.7);}
+  60%{box-shadow:0 0 0 10px rgba(79,209,197,0);}
+  100%{box-shadow:0 0 0 0 rgba(79,209,197,0);}
+}
+.btn.flash{animation:btnFlash .6s ease;}
 .import-status{margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:10px;border-radius:6px;display:none;}
 .import-status.ok{display:block;background:#101f14;border:1px solid #234;color:var(--success);}
 .import-status.err{display:block;background:#1f1111;border:1px solid #422;color:var(--danger);}
@@ -215,6 +239,7 @@ input[type=text],select{
 </style>
 </head>
 <body>
+<div id="toastContainer"></div>
 <div class="topbar"></div>
 <div class="wrap">
 
@@ -301,7 +326,7 @@ input[type=text],select{
       <div style="font-size:12.5px;color:var(--muted);margin-bottom:16px;line-height:1.6;">
         The RAN is split into three functional pieces — RU, DU, CU — connected by fronthaul, midhaul and backhaul.
         SMO (hosting the Non-RT RIC) manages everything from above via O1/O2/A1; the Near-RT RIC sits closer to the
-        radio and controls it in real time via E2. Click an interface below to see what it connects and why.
+        radio and controls it in real time via E2. Hover an interface below, or in the table, to see it highlighted in both places at once.
       </div>
       <div id="ranDiagram"></div>
     </div>
@@ -431,10 +456,10 @@ input[type=text],select{
     <div class="card" style="margin-top:16px;">
       <h3>Trigger a scenario</h3>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <button class="btn" onclick="triggerScenario('congestion')">Simulate load spike</button>
-        <button class="btn ghost" onclick="triggerScenario('sleeping')">Simulate sleeping cell</button>
-        <button class="btn ghost" onclick="triggerScenario('outage')">Simulate cell outage</button>
-        <button class="btn ghost" onclick="triggerScenario('reset')">Reset to nominal</button>
+        <button class="btn" onclick="triggerScenario('congestion', this)">Simulate load spike</button>
+        <button class="btn info" onclick="triggerScenario('sleeping', this)">Simulate sleeping cell</button>
+        <button class="btn danger" onclick="triggerScenario('outage', this)">Simulate cell outage</button>
+        <button class="btn ghost" onclick="triggerScenario('reset', this)">Reset to nominal</button>
       </div>
     </div>
   </div>
@@ -940,6 +965,9 @@ function drawRing(){
     if(cell.remediating) color='#4FD1C5';
 
     parts.push(`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="${cell.remediating?'#4FD1C5':'#2A323D'}" stroke-width="${cell.remediating?1.6:1}" opacity="${cell.remediating?0.9:0.5}"/>`);
+    if(cell.justTriggered){
+      parts.push(`<circle cx="${x}" cy="${y}" r="13" fill="none" stroke="#F85149" stroke-width="2.5"><animate attributeName="r" values="13;30" dur="0.9s" repeatCount="2"/><animate attributeName="opacity" values="0.9;0" dur="0.9s" repeatCount="2"/></circle>`);
+    }
     parts.push(`<circle cx="${x}" cy="${y}" r="16" fill="none" stroke="${VENDOR_COLORS[cell.vendor]}" stroke-width="2" opacity="0.9"/>`);
     parts.push(`<circle cx="${x}" cy="${y}" r="13" fill="${color}" opacity="0.9"><title>${cell.id} (${cell.vendor}) — ${cell.state}${cell.remediating?' · rApp action in progress':''}\nPRB: ${cell.prb.toFixed(0)}% · HO fail: ${cell.hoFail.toFixed(1)}%${cell.lastAction?'\nLast action: '+cell.lastAction:''}</title>${cell.remediating?'<animate attributeName="r" values="13;17;13" dur="1.2s" repeatCount="indefinite"/>':''}</circle>`);
     parts.push(`<text x="${x}" y="${y+3}" text-anchor="middle" font-size="8" fill="#0D1117" font-weight="600">${cell.id.split('-')[1]}</text>`);
@@ -1054,13 +1082,35 @@ logLine('loopLogPlain','Copilot narration ready — plain-language explanations 
 /* ============================================================
    SCENARIO TRIGGERS
    ============================================================ */
-function triggerScenario(type){
-  if(type==='reset'){ initCells(); logLine('loopLog','All cells reset to nominal','info'); drawRing(); return; }
+function showToast(message, kind='info'){
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast '+kind;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(()=>toast.remove(), 2800);
+}
+function flashButton(btn){
+  if(!btn) return;
+  btn.classList.remove('flash'); void btn.offsetWidth; // restart animation if clicked rapidly
+  btn.classList.add('flash');
+}
+function triggerScenario(type, btn){
+  flashButton(btn);
+  if(type==='reset'){
+    initCells();
+    logLine('loopLog','All cells reset to nominal','info');
+    showToast('All 12 cells reset to nominal', 'info');
+    drawRing();
+    return;
+  }
   const c = cells[Math.floor(Math.random()*cells.length)];
-  if(type==='congestion'){ c.prb = 88; c.state='congested'; logLine('loopLog',`[${c.id}] Load spike injected — PRB now ${c.prb}%`,'warn'); }
-  if(type==='sleeping'){ c.prb = 8; c.state='nominal'; logLine('loopLog',`[${c.id}] Sustained low utilization injected — PRB now ${c.prb}%`,'warn'); }
-  if(type==='outage'){ c.state='alarm'; c.prb=95; logLine('loopLog',`[${c.id}] FM alarm raised — site outage detected`,'conf'); }
+  c.justTriggered = Date.now();
+  if(type==='congestion'){ c.prb = 88; c.state='congested'; logLine('loopLog',`[${c.id}] Load spike injected — PRB now ${c.prb}%`,'warn'); showToast(`⚡ Load spike injected on ${c.id} — PRB now 88%`, 'warn'); }
+  if(type==='sleeping'){ c.prb = 8; c.state='nominal'; logLine('loopLog',`[${c.id}] Sustained low utilization injected — PRB now ${c.prb}%`,'warn'); showToast(`💤 Sleeping-cell condition injected on ${c.id} — PRB now 8%`, 'warn'); }
+  if(type==='outage'){ c.state='alarm'; c.prb=95; logLine('loopLog',`[${c.id}] FM alarm raised — site outage detected`,'conf'); showToast(`🚨 Outage injected on ${c.id} — FM alarm raised`, 'danger'); }
   drawRing();
+  setTimeout(()=>{ c.justTriggered=null; drawRing(); }, 2500);
 }
 
 /* ============================================================
@@ -1481,7 +1531,8 @@ function renderRanDiagram(){
 function hlIface(id){
   document.querySelectorAll('.ran-conn, .ran-vert').forEach(el=>el.classList.remove('hl'));
   if(!id) return;
-  document.querySelectorAll(`[id^="conn-${id}"]`).forEach(el=>el.classList.add('hl'));
+  const target = ['o1','o2','a1'].includes(id) ? 'o1' : id;
+  document.querySelectorAll(`[id^="conn-${target}"]`).forEach(el=>el.classList.add('hl'));
   const row = document.getElementById('iface-row-'+id);
   if(row) row.style.background = '#241c0f';
 }

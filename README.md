@@ -51,15 +51,6 @@ cd smo-demo
 open index.html   # or just double-click it, or drag it into a browser tab
 ```
 
-## Deploying this yourself
-
-The live link above assumes GitHub Pages with a custom domain:
-
-1. Push this repo to GitHub.
-2. In **Settings → Pages**, set the source to the `main` branch, root folder.
-3. If using a custom domain, add a `CNAME` file (already included in this repo — edit it to your own domain) and point a DNS `CNAME` record at `<your-username>.github.io`.
-4. GitHub Pages will serve `index.html` automatically at your domain.
-
 ## Tech notes
 
 - Vanilla HTML/CSS/JS — no frameworks, no build tooling.

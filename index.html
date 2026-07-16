@@ -197,8 +197,8 @@ input[type=text],select{
 .term.below:hover::before{bottom:auto;top:120%;border-top-color:transparent;border-bottom-color:var(--border);}
 .tab.active .term:hover{color:#1a1204;border-bottom-color:#1a1204;}
 
-.scroll-list{max-height:420px;overflow-y:auto;padding-right:4px;}
-.scroll-table-wrap{max-height:420px;overflow-y:auto;}
+.scroll-list{height:560px;overflow-y:auto;padding-right:4px;}
+.scroll-table-wrap{height:560px;overflow-y:auto;}
 .scroll-table-wrap table{width:100%;}
 .scroll-table-wrap thead th, .scroll-table-wrap tr.sticky-head td{position:sticky;top:0;background:var(--surface);z-index:5;}
 
@@ -215,10 +215,20 @@ input[type=text],select{
 .hover-pop .hp-row{display:flex;justify-content:space-between;font-size:11px;margin:3px 0;}
 .hover-pop .hp-row span:last-child{font-family:'IBM Plex Mono',monospace;color:var(--cyan);}
 .hover-pop .hp-note{font-size:9.5px;color:var(--faint);margin-top:8px;font-style:italic;line-height:1.35;}
-.kpi-hover-wrap{position:relative;width:100%;}
-.kpi-hover-wrap:hover .hover-pop{display:block;}
-.kpi-hover-wrap .hover-pop{left:auto;right:0;width:210px;}
-.trace-hover-wrap .hover-pop{left:auto;right:0;top:auto;bottom:100%;margin-top:0;margin-bottom:8px;width:230px;}
+.kpi-hover-wrap{position:relative;width:100%;cursor:help;}
+
+/* floating popover — used inside scrollable containers where a CSS-only absolute popover would get clipped by overflow:auto */
+.float-pop{
+  display:none;position:fixed;z-index:300;
+  background:#1B222D;border:1px solid var(--border);border-radius:8px;
+  padding:11px 13px;box-shadow:0 10px 26px rgba(0,0,0,.55);
+  font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:var(--text);
+  width:220px;line-height:1.45;pointer-events:none;
+}
+.float-pop .hp-title{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px;}
+.float-pop .hp-row{display:flex;justify-content:space-between;font-size:11px;margin:3px 0;}
+.float-pop .hp-row span:last-child{font-family:'IBM Plex Mono',monospace;color:var(--cyan);}
+.float-pop .hp-note{font-size:9.5px;color:var(--faint);margin-top:8px;font-style:italic;line-height:1.35;}
 .dq-toggle{border-bottom:1px dotted var(--faint);}
 .dq-toggle:hover{color:var(--cyan);border-bottom-color:var(--cyan);}
 
@@ -265,6 +275,7 @@ input[type=text],select{
 </head>
 <body>
 <div id="toastContainer"></div>
+<div id="floatPop" class="float-pop"></div>
 <div class="topbar"></div>
 <div class="wrap">
 
@@ -2112,31 +2123,76 @@ const PM_KPIS = [
   {name:term('Packet Error Rate (URLLC slice)','Fraction of packets lost or corrupted for the Ultra-Reliable Low-Latency slice, which targets a near-zero rate.'), val:0.008, unit:'%', good:true, min:0.001, max:0.5},
   {name:term('Avg. Latency (PDB compliance)','Average one-way delay against the Packet Delay Budget — the max acceptable delay before it counts as a QoS violation.'), val:6.2, unit:'ms', good:true, min:2, max:15},
 ];
-/* fixed synthetic 24h trend per KPI, generated once so the popover doesn't jitter on re-render */
+/* fixed synthetic 24h trend per KPI, generated once so the popover doesn't jitter on re-render.
+   Values are generated directly in the KPI's real unit range (k.min..k.max), so the min/max
+   shown in the hover popover are meaningful, not an abstract 0-100 scale. */
+function fmtKpi(v,k){
+  if(k.unit==='%') return k.max<=1 ? v.toFixed(3) : v.toFixed(2);
+  if(k.unit==='ms') return v.toFixed(1);
+  return Math.round(v);
+}
 PM_KPIS.forEach((k,i)=>{
   const rnd = seededRand(hashStr(k.name)+i);
-  let v = 50; const pts=[];
-  for(let p=0;p<18;p++){ v += (rnd()-0.5)*20; v = Math.max(6,Math.min(94,v)); pts.push(v); }
+  const range = k.max - k.min;
+  let v = k.min + range*0.5;
+  const pts=[];
+  for(let p=0;p<18;p++){
+    v += (rnd()-0.5)*range*0.22;
+    v = Math.max(k.min, Math.min(k.max, v));
+    pts.push(v);
+  }
   k.fakeTrend = pts;
 });
-function sparkSVG(values, color){
+function sparkSVG(values, min, max, color){
   const w=190,h=60,pad=5;
+  const range = (max-min)||1;
   const step = (w-2*pad)/(values.length-1);
-  const pts = values.map((v,i)=>`${(pad+i*step).toFixed(1)},${(h-pad-(v/100)*(h-2*pad)).toFixed(1)}`).join(' ');
-  const dots = values.map((v,i)=>`<circle cx="${(pad+i*step).toFixed(1)}" cy="${(h-pad-(v/100)*(h-2*pad)).toFixed(1)}" r="1.5" fill="${color}"/>`).join('');
+  const y = v => h-pad-((v-min)/range)*(h-2*pad);
+  const pts = values.map((v,i)=>`${(pad+i*step).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const dots = values.map((v,i)=>`<circle cx="${(pad+i*step).toFixed(1)}" cy="${y(v).toFixed(1)}" r="1.5" fill="${color}"/>`).join('');
   return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" xmlns="http://www.w3.org/2000/svg">
     <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.8"/>${dots}</svg>`;
 }
+/* ============================================================
+   FLOATING POPOVER — fixed-position, escapes clipping from
+   scrollable (overflow:auto) ancestors like the alarm/CM/trace lists
+   ============================================================ */
+function positionFloatPop(anchorEl){
+  const el = document.getElementById('floatPop');
+  const r = anchorEl.getBoundingClientRect();
+  const margin = 8;
+  el.style.visibility = 'hidden'; el.style.display = 'block';
+  const w = el.offsetWidth, h = el.offsetHeight;
+  let left = Math.min(window.innerWidth - w - 8, Math.max(8, r.right - w));
+  let top = r.top - h - margin;
+  if(top < 8) top = Math.min(window.innerHeight - h - 8, r.bottom + margin);
+  el.style.left = left + 'px';
+  el.style.top = top + 'px';
+  el.style.visibility = 'visible';
+}
+function showFloatPop(html, anchorEl){
+  const el = document.getElementById('floatPop');
+  el.innerHTML = html;
+  positionFloatPop(anchorEl);
+}
+function hideFloatPop(){
+  document.getElementById('floatPop').style.display = 'none';
+}
+function kpiPopHTML(i){
+  const k = PM_KPIS[i];
+  const minV = Math.min(...k.fakeTrend), maxV = Math.max(...k.fakeTrend);
+  const color = k.good?'#3FB950':'#F2A93B';
+  return `<div class="hp-title">24h trend (synthetic)</div>
+    ${sparkSVG(k.fakeTrend, k.min, k.max, color)}
+    <div class="hp-row"><span>Minimum point</span><span>${fmtKpi(minV,k)}${k.unit}</span></div>
+    <div class="hp-row"><span>Maximum point</span><span>${fmtKpi(maxV,k)}${k.unit}</span></div>
+    <div class="hp-note">Illustrative trend line, not live measurement history — the current value above is real-time.</div>`;
+}
 function renderPmKpis(){
-  document.getElementById('pmKpiList').innerHTML = PM_KPIS.map(k=>`
-    <div class="rapp-card kpi-hover-wrap" style="margin-bottom:8px;padding:11px 14px;display:flex;justify-content:space-between;align-items:center;">
+  document.getElementById('pmKpiList').innerHTML = PM_KPIS.map((k,i)=>`
+    <div class="rapp-card kpi-hover-wrap" style="margin-bottom:8px;padding:11px 14px;display:flex;justify-content:space-between;align-items:center;" onmouseenter="showFloatPop(kpiPopHTML(${i}), this)" onmouseleave="hideFloatPop()">
       <span style="font-size:12.5px;">${k.name}</span>
       <span class="mono" style="font-size:14px;color:${k.good?'var(--success)':'var(--amber)'};">${k.val}${k.unit}</span>
-      <div class="hover-pop">
-        <div class="hp-title">24h trend (synthetic)</div>
-        ${sparkSVG(k.fakeTrend, k.good?'#3FB950':'#F2A93B')}
-        <div class="hp-note">Illustrative trend line, not live measurement history — the current value above is real-time.</div>
-      </div>
     </div>`).join('');
   document.getElementById('ovAvail').querySelector('.val').textContent = PM_KPIS[0].val;
 }
@@ -2200,25 +2256,25 @@ function traceSnapshot(t){
   const dur = Math.round(4+rnd()*32);
   return {rrc,dl,ul,loss,ho,dur};
 }
+function tracePopHTML(id){
+  const t = traces.find(x=>x.id===id);
+  if(!t) return '';
+  const s = traceSnapshot(t);
+  return `<div class="hp-title">Trace analysis snapshot (synthetic)</div>
+    <div class="hp-row"><span>RRC setup time</span><span>${s.rrc} ms</span></div>
+    <div class="hp-row"><span>DL throughput</span><span>${s.dl} Mbps</span></div>
+    <div class="hp-row"><span>UL throughput</span><span>${s.ul} Mbps</span></div>
+    <div class="hp-row"><span>Packet error rate</span><span>${s.loss}%</span></div>
+    <div class="hp-row"><span>Handovers</span><span>${s.ho}</span></div>
+    <div class="hp-row"><span>Session duration</span><span>${s.dur}s</span></div>
+    <div class="hp-note">Illustrative snapshot for this demo — not a decoded real trace file.</div>`;
+}
 function renderTrace(){
   document.getElementById('traceTable').innerHTML = `<tr class="sticky-head" style="font-size:10.5px;color:var(--faint);text-transform:uppercase;">
     <td style="padding:5px 4px;">Session</td><td>Target</td><td>Tech</td><td style="text-align:right;">Status</td></tr>` +
     traces.map(t=>{
       const statusCell = t.status==='complete' ? `
-        <span class="hover-pop-wrap trace-hover-wrap">
-          <span class="pill allow">complete</span>
-          <div class="hover-pop">
-            <div class="hp-title">Trace analysis snapshot (synthetic)</div>
-            ${(()=>{const s=traceSnapshot(t); return `
-            <div class="hp-row"><span>RRC setup time</span><span>${s.rrc} ms</span></div>
-            <div class="hp-row"><span>DL throughput</span><span>${s.dl} Mbps</span></div>
-            <div class="hp-row"><span>UL throughput</span><span>${s.ul} Mbps</span></div>
-            <div class="hp-row"><span>Packet error rate</span><span>${s.loss}%</span></div>
-            <div class="hp-row"><span>Handovers</span><span>${s.ho}</span></div>
-            <div class="hp-row"><span>Session duration</span><span>${s.dur}s</span></div>`;})()}
-            <div class="hp-note">Illustrative snapshot for this demo — not a decoded real trace file.</div>
-          </div>
-        </span>` : `<span class="pill fcfs">${t.status}</span>`;
+        <span class="pill allow" style="cursor:help;" onmouseenter="showFloatPop(tracePopHTML('${t.id}'), this)" onmouseleave="hideFloatPop()">complete</span>` : `<span class="pill fcfs">${t.status}</span>`;
       return `<tr style="border-bottom:1px solid var(--border);">
       <td class="mono" style="padding:6px 4px;">${t.id}</td><td style="padding:6px 4px;">${t.target}</td>
       <td style="padding:6px 4px;">${t.tech}</td><td style="padding:6px 4px;text-align:right;">${statusCell}</td></tr>`;

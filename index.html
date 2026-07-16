@@ -305,6 +305,9 @@ input[type=text],select{
       <div class="eyebrow" style="margin-top:16px;">Service Management & Orchestration — reference implementation</div>
       <h1>SMO: End-to-End Assurance, Automation &amp; Intelligence</h1>
       <div class="sub">FCAPS monitoring, multi-vendor RAN integration, cloud &amp; lifecycle automation, closed-loop rApp orchestration on the Non-RT RIC, intent-based slice assurance, and security by evidence — all driven by synthetic telemetry.</div>
+      <div style="margin-top:12px;">
+        <button class="btn ghost" onclick="goToTab('docs'); setTimeout(()=>{const el=document.getElementById('doc-fordummies'); if(el) el.scrollIntoView({behavior:'smooth'});},150);">🎓 New to all this? Read the plain-English guide first →</button>
+      </div>
     </div>
     <div class="badge">SIMULATION — SYNTHETIC DATA</div>
   </div>
@@ -816,12 +819,189 @@ input[type=text],select{
     <div class="card" style="margin-bottom:16px;">
       <h3>Jump to a section</h3>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn" onclick="document.getElementById('doc-fordummies').scrollIntoView({behavior:'smooth'})">🎓 For Dummies (start here)</button>
         <button class="btn ghost" onclick="document.getElementById('doc-glossary').scrollIntoView({behavior:'smooth'})">Glossary</button>
         <button class="btn ghost" onclick="document.getElementById('doc-tabs').scrollIntoView({behavior:'smooth'})">Tab-by-tab guide</button>
         <button class="btn ghost" onclick="document.getElementById('doc-scenarios').scrollIntoView({behavior:'smooth'})">Scenario reasoning</button>
         <button class="btn ghost" onclick="document.getElementById('doc-principles').scrollIntoView({behavior:'smooth'})">Design principles</button>
         <button class="btn ghost" onclick="document.getElementById('doc-acronyms').scrollIntoView({behavior:'smooth'})">Acronym index</button>
       </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;border-color:var(--cyan);" id="doc-fordummies">
+      <h3 style="color:var(--cyan);">🎓 For Dummies — start here if none of this makes sense yet</h3>
+      <div style="font-size:12.5px;color:var(--text);line-height:1.65;">
+        This section explains the entire demo using one simple, made-up story — no telecom background required. If a word still
+        confuses you after reading this, it's probably in the Glossary section below, or you can just hover it anywhere in the app.
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h4 style="margin-top:0;">The one-sentence version</h4>
+      <div style="font-size:13px;color:var(--text);line-height:1.6;">
+        This app is a video-game-like simulation of the "control room" that keeps your phone's calls, texts, and internet working —
+        showing, live, how a phone company actually spots problems and fixes a lot of them automatically, without a human doing anything.
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h4 style="margin-top:0;">The big analogy: your phone network is a citywide pizza delivery company</h4>
+      <div style="font-size:12.5px;color:var(--text);line-height:1.65;">
+        Forget "network" for a second. Imagine one giant pizza delivery company that has to deliver to every single phone, in every
+        neighborhood of a whole city, every second of every day. That company needs: delivery hubs scattered around the city, drivers
+        who make split-second decisions, a head office that plans routes and watches for problems, and rules for who gets a pizza first
+        when it's a busy Friday night. Every tab in this app is one piece of that company. Keep this picture in your head — everything
+        below maps back to it.
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h4 style="margin-top:0;">The cell tower, taken apart (RU / DU / CU)</h4>
+      <div style="font-size:12.5px;color:var(--text);line-height:1.65;">
+        A cell tower isn't one box — it's three, each doing a different job, like one delivery hub split into three departments:
+      </div>
+      <ul class="plain" style="font-size:12.5px;color:var(--text);line-height:1.65;padding-left:20px;margin-top:8px;">
+        <li><strong>RU (the loading dock):</strong> the antenna itself — physically sends and receives the "packages" (radio signals) to and from your phone. It never thinks, it just sends/receives.</li>
+        <li><strong>DU (the local dispatcher):</strong> standing right at the hub, making split-second decisions — which package goes out this exact instant. Has to be close by because there's no time to call someone far away.</li>
+        <li><strong>CU (the regional office):</strong> a bit further away, handling less urgent decisions for many hubs at once — like deciding delivery routes for the whole neighborhood rather than one truck.</li>
+        <li><strong>Core network (the highway system):</strong> the big roads connecting every regional office to each other and to the rest of the world (the internet).</li>
+      </ul>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:8px;">See it in the app: the RAN Architecture tab draws exactly this, as boxes connected by lines.</div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h4 style="margin-top:0;">The head office (SMO)</h4>
+      <div style="font-size:12.5px;color:var(--text);line-height:1.65;">
+        <strong>SMO</strong> is the head office for the entire delivery company — it doesn't deliver a single pizza itself, but it watches every hub,
+        notices when one breaks down, changes the rules when needed, and makes sure hubs from different regional franchises can all
+        still work together. That's the whole app you're looking at: it's a model of that head office's control room.
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h4 style="margin-top:0;">Two kinds of brains: slow planners vs. fast reflexes (Non-RT RIC vs. Near-RT RIC)</h4>
+      <div style="font-size:12.5px;color:var(--text);line-height:1.65;">
+        The head office actually has two different decision-making teams, working on completely different timescales:
+      </div>
+      <ul class="plain" style="font-size:12.5px;color:var(--text);line-height:1.65;padding-left:20px;margin-top:8px;">
+        <li><strong>Non-RT RIC — the strategy department:</strong> sits inside the head office (the SMO), thinks in minutes-to-hours,
+        and runs specialist advisors called <strong>rApps</strong> — one advisor studies energy costs and turns off quiet hubs at night, another
+        watches for hubs that are overloaded and reroutes deliveries around them. Slow, but smart and thorough.</li>
+        <li><strong>Near-RT RIC — the regional dispatcher:</strong> a separate, faster team physically closer to the hubs, making calls in a
+        fraction of a second — the kind of call a human (or even the slow strategy department) simply can't make in time. It runs
+        specialist quick-reaction rules called <strong>xApps</strong> — e.g. instantly juggling which delivery lane a driver uses right now.</li>
+      </ul>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:8px;">See it in the app: Closed Loop is the slow strategy department in action; Near-RT RIC is the fast dispatcher, with a live counter proving how much faster it reacts.</div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h4 style="margin-top:0;">The five things the head office always keeps an eye on (FCAPS)</h4>
+      <div style="font-size:12.5px;color:var(--text);line-height:1.65;">
+        Any company running a citywide delivery operation needs the same five kinds of tracking. Telecom people gave them a somewhat
+        clunky acronym, FCAPS, but the ideas are simple:
+      </div>
+      <ul class="plain" style="font-size:12.5px;color:var(--text);line-height:1.65;padding-left:20px;margin-top:8px;">
+        <li><strong>Fault:</strong> which hubs or trucks are broken right now (this app's "active alarms" list).</li>
+        <li><strong>Configuration:</strong> a record of every setting and every change made to any hub, and who made it.</li>
+        <li><strong>Accounting:</strong> counting how many pizzas actually got delivered, for billing and planning.</li>
+        <li><strong>Performance:</strong> how fast and reliably deliveries are actually happening right now (this app's "live KPIs").</li>
+        <li><strong>Security:</strong> making sure nobody unauthorized can mess with a hub or steal a delivery.</li>
+      </ul>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:8px;">See it in the app: this is the whole FCAPS Monitor tab.</div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h4 style="margin-top:0;">A closed loop is just a smart thermostat</h4>
+      <div style="font-size:12.5px;color:var(--text);line-height:1.65;">
+        You already understand this idea from home: a smart thermostat <em>notices</em> the room got cold, <em>decides</em> to turn on the heat,
+        <em>acts</em> on it, then <em>checks</em> the room actually warmed up — with no human touching a dial. A "closed loop" in this app is exactly
+        that pattern, applied to network problems: a rApp notices a hub is overloaded or quiet or broken, decides what to do, does it, and
+        checks it worked. No engineer got paged for any of it.
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:8px;">See it in the app: the Closed Loop tab. Click any "Simulate..." button to break something on purpose and watch a specialist advisor (rApp) fix it live — the affected hub glows cyan while it's being fixed.</div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h4 style="margin-top:0;">Network slicing is a reserved express lane</h4>
+      <div style="font-size:12.5px;color:var(--text);line-height:1.65;">
+        Picture a highway during rush hour with one lane painted off and reserved only for ambulances — everyone else can still use
+        their regular lanes, but that one lane guarantees an ambulance never gets stuck in traffic. A "network slice" is the same idea
+        applied to phone data: a company can rent a guaranteed, protected "lane" of network capacity for something important (an
+        enterprise customer's video calls, a factory's robots), separate from everyone else's regular phone traffic on the very same towers.
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:8px;">See it in the app: the Slice Lifecycle tab — you can create one of these express lanes, change it, watch it get monitored, and shut it down.</div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h4 style="margin-top:0;">Conflict management is two bosses giving one worker opposite orders</h4>
+      <div style="font-size:12.5px;color:var(--text);line-height:1.65;">
+        Imagine two different managers at the head office both radio the same driver at the same moment — one says "speed up," the
+        other says "slow down." Something has to decide whose order actually wins, or the poor driver just flip-flops forever. That's a
+        "conflict" between two automated rApps trying to do opposite things to the same hub at the same time, and this app shows three
+        different company policies for resolving it: let both happen and see what happens (Allow), first order given wins (First-Come-First-Served),
+        or the more senior manager's order always wins (Priority-Based Override).
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:8px;">See it in the app: the Conflict Log tab — and it now also catches real conflicts happening live on the Closed Loop tab, not just a scripted example.</div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h4 style="margin-top:0;">Cloud & NF Lifecycle is renting warehouse space instead of owning buildings</h4>
+      <div style="font-size:12.5px;color:var(--text);line-height:1.65;">
+        Older phone networks used dedicated, single-purpose hardware boxes for everything — like owning a building you can only ever
+        use as a pizza oven. Modern networks instead run most of that software on rented, general-purpose computer warehouse space
+        (the "cloud") that can be resized or moved around as needed. This tab lets you pick one of those virtual "warehouses" and
+        instantiate (build a new one), heal (fix one that broke down on its own), scale (make it bigger or smaller), upgrade (renovate it
+        without closing), or terminate (shut it down) it — and warehouses really can spontaneously break down here, the way real ones do,
+        giving you something genuine to go fix.
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:8px;">See it in the app: click any row in the Cloud &amp; NF Lifecycle table to select a "warehouse," then use the buttons on the left.</div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h4 style="margin-top:0;">Zero-Touch Rollout is a store that opens itself</h4>
+      <div style="font-size:12.5px;color:var(--text);line-height:1.65;">
+        Imagine a new store location where the shelves stock themselves, the cash registers configure themselves, and the lights turn
+        on automatically the moment the building has power — with no manager ever having to personally visit and set it up by hand.
+        That's what "zero-touch" means for a new cell site: it's not that nobody's watching, it's that the whole setup process — thirteen
+        careful, auditable steps in this demo — happens automatically instead of needing an engineer to fly out and configure it manually.
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:8px;">See it in the app: the Zero-Touch Rollout tab — press play and watch all thirteen steps run in order.</div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h4 style="margin-top:0;">Security & Trust is ID badges and tamper seals</h4>
+      <div style="font-size:12.5px;color:var(--text);line-height:1.65;">
+        Think of a secure warehouse: everyone entering needs to badge in every single time, even if they were just inside five minutes
+        ago (that's "zero-trust" — nobody gets automatically trusted just because they're already inside). Every delivery truck's cargo has
+        a tamper-proof seal checked before it's allowed to leave (that's "supply-chain integrity" — proving nothing was swapped or
+        altered along the way). This tab shows both ideas as things you can actually turn on and watch produce real evidence, not just a
+        checkbox that claims to be secure.
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:8px;">See it in the app: the Security &amp; Trust tab.</div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h4 style="margin-top:0;">The Openness Scorecard is a report card for "could we switch delivery companies easily?"</h4>
+      <div style="font-size:12.5px;color:var(--text);line-height:1.65;">
+        If a city ever wanted to fire this delivery company and hire a different one, how painful would that be? A genuinely "open"
+        platform uses standard boxes, standard labels, and standard paperwork that any competitor could pick up and understand —
+        versus a "closed" one that only works with that one company's proprietary trucks and secret route maps forever. This tab grades
+        the demo's own platform, honestly, on six such report-card categories.
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:8px;">See it in the app: the Openness Scorecard tab.</div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h4 style="margin-top:0;">A suggested first walkthrough</h4>
+      <ol style="font-size:12.5px;color:var(--text);line-height:1.75;padding-left:20px;">
+        <li>Open <strong>RAN Architecture</strong> and just look at the diagram — that's the delivery hub taken apart.</li>
+        <li>Open <strong>Closed Loop</strong>, click "Simulate sleeping cell (ESM)," and watch a hub go quiet, glow cyan, and get fixed automatically within a few seconds — no clicking required after that first button.</li>
+        <li>Try "Simulate cell outage (COC)" on the same tab and watch a completely different kind of automatic fix happen.</li>
+        <li>Open <strong>FCAPS Monitor</strong> and hover over any live KPI number — a little chart pops up showing its trend.</li>
+        <li>Open <strong>Overview</strong> last — now that you know the pieces, the executive summary should actually make sense.</li>
+      </ol>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:4px;">Everything else in this Documentation tab — the Glossary, the tab-by-tab guide, and the scenario reasoning below — goes into
+      much more technical depth once this section starts feeling familiar.</div>
     </div>
 
     <div class="card" style="margin-bottom:16px;" id="doc-glossary">

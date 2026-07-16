@@ -1940,6 +1940,7 @@ function renderRanDiagram(){
 }
 function hlIface(id){
   document.querySelectorAll('.ran-conn, .ran-vert').forEach(el=>el.classList.remove('hl'));
+  document.querySelectorAll('[id^="iface-row-"]').forEach(el=>el.style.background='');
   if(!id) return;
   const target = ['o1','o2','a1'].includes(id) ? 'o1' : id;
   document.querySelectorAll(`[id^="conn-${target}"]`).forEach(el=>el.classList.add('hl'));
@@ -1951,7 +1952,7 @@ renderRanDiagram();
 function renderInterfaceTable(){
   document.getElementById('interfaceTable').innerHTML = `<tr style="font-size:10.5px;color:var(--faint);text-transform:uppercase;">
     <td style="padding:6px 4px;">Interface</td><td>Connects</td><td>Purpose</td></tr>` +
-    INTERFACES.map(i=>`<tr id="iface-row-${i.id}" style="border-bottom:1px solid var(--border);cursor:pointer;" onmouseenter="hlIface('${i.id}')" onmouseleave="hlIface(null); document.getElementById('iface-row-${i.id}').style.background='';">
+    INTERFACES.map(i=>`<tr id="iface-row-${i.id}" style="border-bottom:1px solid var(--border);cursor:pointer;" onmouseenter="hlIface('${i.id}')" onmouseleave="hlIface(null);">
       <td class="mono" style="padding:7px 4px;color:var(--amber);">${i.name}</td>
       <td style="padding:7px 4px;color:var(--muted);">${i.connects}</td>
       <td style="padding:7px 4px;font-size:11px;">${i.purpose}</td></tr>`).join('');

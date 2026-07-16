@@ -196,6 +196,29 @@ input[type=text],select{
 .term.below:hover::after{bottom:auto;top:135%;}
 .term.below:hover::before{bottom:auto;top:120%;border-top-color:transparent;border-bottom-color:var(--border);}
 .tab.active .term:hover{color:#1a1204;border-bottom-color:#1a1204;}
+
+.scroll-list{max-height:420px;overflow-y:auto;padding-right:4px;}
+.scroll-table-wrap{max-height:420px;overflow-y:auto;}
+.scroll-table-wrap table{width:100%;}
+.scroll-table-wrap thead th, .scroll-table-wrap tr.sticky-head td{position:sticky;top:0;background:var(--surface);z-index:5;}
+
+.hover-pop-wrap{position:relative;display:inline-block;}
+.hover-pop{
+  display:none;position:absolute;z-index:90;left:0;top:100%;margin-top:8px;
+  background:#1B222D;border:1px solid var(--border);border-radius:8px;
+  padding:11px 13px;box-shadow:0 10px 26px rgba(0,0,0,.55);
+  font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:var(--text);
+  width:220px;line-height:1.45;pointer-events:none;
+}
+.hover-pop-wrap:hover .hover-pop{display:block;}
+.hover-pop .hp-title{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px;}
+.hover-pop .hp-row{display:flex;justify-content:space-between;font-size:11px;margin:3px 0;}
+.hover-pop .hp-row span:last-child{font-family:'IBM Plex Mono',monospace;color:var(--cyan);}
+.hover-pop .hp-note{font-size:9.5px;color:var(--faint);margin-top:8px;font-style:italic;line-height:1.35;}
+.kpi-hover-wrap{position:relative;width:100%;}
+.kpi-hover-wrap:hover .hover-pop{display:block;}
+.kpi-hover-wrap .hover-pop{left:auto;right:0;width:210px;}
+.trace-hover-wrap .hover-pop{left:auto;right:0;top:auto;bottom:100%;margin-top:0;margin-bottom:8px;width:230px;}
 .dq-toggle{border-bottom:1px dotted var(--faint);}
 .dq-toggle:hover{color:var(--cyan);border-bottom-color:var(--cyan);}
 
@@ -365,22 +388,22 @@ input[type=text],select{
   <div class="panel" id="panel-fcaps">
     <div class="grid cols-2">
       <div class="card">
-        <h3><span class="term" data-tip="Fault Management — tracking things that have gone wrong (alarms) so they can be fixed.">Fault Management</span> — active alarms</h3>
-        <div id="alarmList"></div>
+        <h3><span class="term" data-tip="Fault Management — tracking things that have gone wrong (alarms) so they can be fixed.">Fault Management</span> — active alarms <span class="chip" id="alarmCountChip" style="text-transform:none;"></span></h3>
+        <div id="alarmList" class="scroll-list"></div>
       </div>
       <div class="card">
-        <h3><span class="term" data-tip="Performance Management — tracking how well the network is actually running (speed, reliability, capacity).">Performance Management</span> — live KPIs</h3>
-        <div id="pmKpiList"></div>
+        <h3><span class="term" data-tip="Performance Management — tracking how well the network is actually running (speed, reliability, capacity).">Performance Management</span> — live KPIs <span style="font-weight:400;text-transform:none;color:var(--faint);font-size:10.5px;">(hover a KPI for its trend)</span></h3>
+        <div id="pmKpiList" class="scroll-list"></div>
       </div>
     </div>
     <div class="grid cols-2" style="margin-top:16px;">
       <div class="card">
         <h3><span class="term" data-tip="Configuration Management — a record of every setting on the network and every change made to it.">Configuration Management</span> — recent changes</h3>
-        <table style="width:100%;border-collapse:collapse;font-size:11.5px;" id="cmTable"></table>
+        <div class="scroll-table-wrap"><table style="width:100%;border-collapse:collapse;font-size:11.5px;" id="cmTable"></table></div>
       </div>
       <div class="card">
-        <h3><span class="term" data-tip="A 'trace' follows one specific call or device through the network in detail, for deep troubleshooting.">Trace sessions</span></h3>
-        <table style="width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:10px;" id="traceTable"></table>
+        <h3><span class="term" data-tip="A 'trace' follows one specific call or device through the network in detail, for deep troubleshooting.">Trace sessions</span> <span style="font-weight:400;text-transform:none;color:var(--faint);font-size:10.5px;">(hover a completed session for its snapshot)</span></h3>
+        <div class="scroll-table-wrap" style="margin-bottom:10px;"><table style="width:100%;border-collapse:collapse;font-size:11.5px;" id="traceTable"></table></div>
         <button class="btn ghost" onclick="startTrace()">Start new trace session</button>
       </div>
     </div>
@@ -573,6 +596,10 @@ input[type=text],select{
         <button class="btn ghost" id="stage-decommission" onclick="setSliceStage('decommission')">4. Decommission</button>
       </div>
       <div class="log" id="sliceLifecycleLog" style="height:120px;margin-top:14px;"></div>
+      <div class="card" style="margin-top:12px;border-color:var(--cyan);background:var(--surface-2);">
+        <h3 style="color:var(--cyan);">Where this stage's inputs come from</h3>
+        <div style="font-size:12px;color:var(--text);line-height:1.6;" id="sliceStageSource"></div>
+      </div>
     </div>
     <div class="grid cols-2">
       <div class="card">
@@ -659,13 +686,21 @@ input[type=text],select{
     <div class="grid cols-2">
       <div class="card">
         <h3>Network function lifecycle automation</h3>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Full LCM, not just deployment — instantiate, heal, scale, upgrade, terminate — each with exposed per-operation status.</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Full LCM, not just deployment — instantiate, heal, scale, upgrade, terminate — each with exposed per-operation status.</div>
+        <div style="font-size:11.5px;color:var(--text);line-height:1.55;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:9px 11px;margin-bottom:12px;">
+          <strong>Where an Instantiate request comes from:</strong> a Zero-Touch Rollout pipeline run (new site), a Slice Lifecycle capacity change that needs more RAN resources, or a manual trigger here. <strong>When it fires,</strong> the new function is registered with the SMO's inventory and shows up immediately, live, in the Infrastructure &amp; deployment visibility panel to the right — this demo triggers that same registration when you click Instantiate below.
+        </div>
+        <div class="rapp-card" id="nfSelectedBanner" style="margin-bottom:10px;padding:10px 14px;background:var(--surface-2);">
+          <span class="field-label" style="margin:0;">Selected object</span>
+          <div id="nfSelectedText" style="font-size:12.5px;margin-top:4px;">None selected — pick a row in the table to the right, or Instantiate a new one.</div>
+        </div>
         <div class="rapp-grid" id="nfLcmGrid" style="grid-template-columns:1fr;"></div>
       </div>
       <div class="card">
-        <h3>Infrastructure &amp; deployment visibility</h3>
-        <table style="width:100%;border-collapse:collapse;font-size:12px;" id="infraTable"></table>
-        <div class="trend" style="margin-top:8px;">Single queryable view · updated live · open interface</div>
+        <h3>Infrastructure &amp; deployment visibility <span class="chip" id="infraCountChip" style="text-transform:none;"></span></h3>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Click a row to select it for Instantiate/Heal/Scale/Upgrade/Terminate. Status updates live — occasionally an object degrades on its own, the way real infrastructure does.</div>
+        <div class="scroll-table-wrap"><table style="width:100%;border-collapse:collapse;font-size:12px;" id="infraTable"></table></div>
+        <div class="trend" style="margin-top:8px;">Populated by Instantiate actions here, the O2-DMS zero-touch pipeline, and periodic O-Cloud inventory reconciliation · updated live · open interface</div>
       </div>
     </div>
   </div>
@@ -679,6 +714,14 @@ input[type=text],select{
         through deployment, commissioning, and post-launch KPI validation, with automatic rollback on failure. Based on the
         generic O-RAN/3GPP CNF lifecycle (onboard → discover → deploy → commission → validate), not any single vendor's
         specific tooling.
+      </div>
+      <div style="font-size:11.5px;color:var(--text);line-height:1.55;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:9px 11px;margin-bottom:14px;">
+        <strong>Where the data for a new integration comes from:</strong> the software package and its signature come from the operator's
+        container/artifact registry; the site's physical hardware (RU/DU/CU) is auto-discovered over the O1 interface once it's powered
+        on-site (Plug-and-Play), rather than typed in by hand; the site configuration itself is generated from planning-tool design inputs
+        (radio parameters, cell IDs, neighbor lists) via one common templating engine for every architecture; and the post-launch KPI
+        validation window reads live PM counters from this same SMO, the same feed shown on the FCAPS Monitor tab. Clicking "Run new site
+        integration" below simulates that whole chain running end-to-end for one illustrative site.
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
         <button class="btn" onclick="runZeroTouchPipeline()">Run new site integration</button>
@@ -700,6 +743,12 @@ input[type=text],select{
       <div class="card">
         <h3>Supply-chain integrity</h3>
         <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Every deployed artifact carries verifiable provenance.</div>
+        <div style="font-size:11px;color:var(--text);line-height:1.5;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:10px;">
+          <strong>What this does:</strong> checks one deployed artifact (an rApp package, Helm chart, container image, or SBOM manifest) against its
+          build-time cryptographic signature and checksum — proving it's exactly what was built and approved, not tampered with.
+          <strong>How it's selected:</strong> not random — it's the next artifact in this SMO's deployment queue, cycled round-robin so every
+          artifact type gets verified in turn. <span id="nextArtifactHint"></span>
+        </div>
         <div class="log mono" id="supplyChainLog" style="height:230px;"></div>
         <button class="btn" style="margin-top:10px;" onclick="verifyArtifact()">Verify next artifact</button>
       </div>
@@ -713,8 +762,19 @@ input[type=text],select{
       <div style="font-size:12.5px;color:var(--muted);margin-bottom:16px;line-height:1.6;">
         Openness &amp; data ownership · Decoupled architecture · Trustworthy automation · Security by evidence · Safe autonomy · Freedom from lock-in.
         Each slider starts from something actually measurable elsewhere in this demo — the source is noted under each one — because
-        there's no live sensor for "how open is this architecture." Drag any slider to reflect your own judgment (e.g. for a real vendor
-        you're evaluating), or hit recalculate to pull fresh numbers from the demo's current state.
+        there's no live sensor for "how open is this architecture."
+      </div>
+      <div style="font-size:11.5px;color:var(--text);line-height:1.6;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:16px;">
+        <strong>What moves each score, if you want to see it change:</strong> toggle rows in the Data &amp; Openness coverage matrix (Openness &amp; data ownership);
+        disconnect/reconnect the external data platform on that same tab (Decoupled architecture); enable or disable rApps on the Closed Loop or Catalog tabs
+        (Trustworthy automation — genuine-logic rApps count in your favor, imported stubs don't); toggle controls on this tab's checklist (Security by evidence);
+        change the conflict-resolution strategy on the Conflict Log tab (Safe autonomy); or apply a self-serve data route on the Data &amp; Openness tab
+        (Freedom from lock-in). Hit "Recalculate from live demo state" any time to pull fresh numbers from whatever you've actually done.
+        <br><br>
+        <strong>What dragging a slider does:</strong> it overrides that one dimension with your own manual judgment — useful if you're scoring a real
+        vendor rather than this demo — and immediately recalculates the composite score below from that override. It does not change anything else in
+        the demo, and your manual value stays in place until you either drag it again or press Recalculate, which discards manual overrides and
+        pulls every dimension back from live demo state.
       </div>
       <button class="btn ghost" style="margin-bottom:16px;" onclick="computeLiveScores()">Recalculate from live demo state</button>
       <div id="scorecardBars"></div>
@@ -783,6 +843,21 @@ input[type=text],select{
         <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">Network Availability</td><td style="padding:6px 4px;">Percentage of time the network is up and reachable — cannot exceed 100%, since it's a percentage of uptime.</td></tr>
       </table>
 
+      <h4 style="color:var(--amber);font-size:12px;margin:14px 0 6px;">5G traffic types, radio &amp; QoS terms</h4>
+      <table style="width:100%;border-collapse:collapse;font-size:11.5px;">
+        <tr style="font-size:10.5px;color:var(--faint);text-transform:uppercase;"><td style="padding:5px 4px;">Term</td><td>Meaning</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);width:110px;">UE</td><td style="padding:6px 4px;">User Equipment — the device connecting to the network (phone, sensor, industrial modem, etc.).</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">eMBB</td><td style="padding:6px 4px;">Enhanced Mobile Broadband — the 5G use case optimized for raw speed and capacity (video, browsing), as opposed to latency or device density.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">URLLC</td><td style="padding:6px 4px;">Ultra-Reliable Low-Latency Communication — the 5G use case optimized for guaranteed, near-instant delivery (industrial control, remote surgery), even at the cost of raw throughput.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">mMTC</td><td style="padding:6px 4px;">Massive Machine-Type Communication — the third 5G use case pillar, for huge numbers of low-power sensors/devices at once. Not separately simulated in this demo, but named here for completeness alongside eMBB/URLLC.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">GBR</td><td style="padding:6px 4px;">Guaranteed Bit Rate — a QoS class where the network reserves dedicated capacity for a flow, rather than best-effort sharing.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">PDB</td><td style="padding:6px 4px;">Packet Delay Budget — the maximum acceptable one-way delay (in ms) for a packet before it's considered a QoS violation.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">PER</td><td style="padding:6px 4px;">Packet Error Rate — the fraction of packets lost or corrupted in transit; URLLC targets an extremely low PER.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">CA</td><td style="padding:6px 4px;">Carrier Aggregation — combining multiple frequency channels into one connection to boost peak throughput.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">DL / UL</td><td style="padding:6px 4px;">Downlink (network → device) and Uplink (device → network) — the two directions of radio traffic.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">RF / PHY</td><td style="padding:6px 4px;">RF: Radio Frequency, the physical airwave signal. PHY: the Physical layer — the lowest processing layer that turns that signal into usable bits.</td></tr>
+      </table>
+
       <h4 style="color:var(--amber);font-size:12px;margin:14px 0 6px;">Slicing, cloud, security &amp; business terms</h4>
       <table style="width:100%;border-collapse:collapse;font-size:11.5px;">
         <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);width:110px;">NSSI</td><td style="padding:6px 4px;">Network Slice Subnet Instance — the RAN's piece of a network slice.</td></tr>
@@ -790,6 +865,9 @@ input[type=text],select{
         <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">CNF / NF Lifecycle</td><td style="padding:6px 4px;">Cloud-native Network Function; its full lifecycle: instantiate, heal, scale, upgrade, terminate.</td></tr>
         <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">Zero-trust / CIS / SBOM</td><td style="padding:6px 4px;">Zero-trust: nothing trusted automatically, every request checked. CIS: a published secure-config checklist. SBOM: an itemized ingredients list for software.</td></tr>
         <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">TCO / OPEX / MTTR</td><td style="padding:6px 4px;">Total Cost of Ownership (full lifecycle cost); Operating Expenses (ongoing running cost); Mean Time to Resolve.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">OSS / BSS</td><td style="padding:6px 4px;">Operations Support System / Business Support System — the operator's own systems (network ops and billing/customer-facing respectively) that sit north of the SMO.</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:6px 4px;color:var(--amber);">SME / DME</td><td style="padding:6px 4px;">Service Management &amp; Exposure / Data Management &amp; Exposure — the R1 services an rApp uses to discover, request, and consume data and management functions from the Non-RT RIC.</td></tr>
+        <tr><td class="mono" style="padding:6px 4px;color:var(--amber);">DC</td><td style="padding:6px 4px;">Data Center — the physical or regional facility hosting cloud-native network functions (e.g. vCU, vDU).</td></tr>
       </table>
     </div>
 
@@ -864,7 +942,14 @@ input[type=text],select{
         <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:5px 4px;">S-NSSAI</td><td style="padding:5px 4px;">Slice Selection Assistance Info</td><td class="mono" style="padding:5px 4px;">MRO</td><td style="padding:5px 4px;">Mobility Robustness Optimization</td></tr>
         <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:5px 4px;">SLA</td><td style="padding:5px 4px;">Service Level Agreement</td><td class="mono" style="padding:5px 4px;">MLB</td><td style="padding:5px 4px;">Mobility Load Balancing</td></tr>
         <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:5px 4px;">5QI</td><td style="padding:5px 4px;">5G QoS Identifier</td><td class="mono" style="padding:5px 4px;">COC</td><td style="padding:5px 4px;">Cell Outage Compensation</td></tr>
-        <tr><td class="mono" style="padding:5px 4px;">NF / LCM</td><td style="padding:5px 4px;">Network Function / Lifecycle Mgmt</td><td class="mono" style="padding:5px 4px;">PCI</td><td style="padding:5px 4px;">Physical Cell Identity</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:5px 4px;">NF / LCM</td><td style="padding:5px 4px;">Network Function / Lifecycle Mgmt</td><td class="mono" style="padding:5px 4px;">PCI</td><td style="padding:5px 4px;">Physical Cell Identity</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:5px 4px;">UE</td><td style="padding:5px 4px;">User Equipment</td><td class="mono" style="padding:5px 4px;">eMBB</td><td style="padding:5px 4px;">Enhanced Mobile Broadband</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:5px 4px;">URLLC</td><td style="padding:5px 4px;">Ultra-Reliable Low-Latency Communication</td><td class="mono" style="padding:5px 4px;">mMTC</td><td style="padding:5px 4px;">Massive Machine-Type Communication</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:5px 4px;">GBR</td><td style="padding:5px 4px;">Guaranteed Bit Rate</td><td class="mono" style="padding:5px 4px;">PDB</td><td style="padding:5px 4px;">Packet Delay Budget</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:5px 4px;">PER</td><td style="padding:5px 4px;">Packet Error Rate</td><td class="mono" style="padding:5px 4px;">CA</td><td style="padding:5px 4px;">Carrier Aggregation</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:5px 4px;">DL / UL</td><td style="padding:5px 4px;">Downlink / Uplink</td><td class="mono" style="padding:5px 4px;">SME</td><td style="padding:5px 4px;">Service Management &amp; Exposure</td></tr>
+        <tr style="border-bottom:1px solid var(--border);"><td class="mono" style="padding:5px 4px;">DME</td><td style="padding:5px 4px;">Data Management &amp; Exposure</td><td class="mono" style="padding:5px 4px;">OSS</td><td style="padding:5px 4px;">Operations Support System</td></tr>
+        <tr><td class="mono" style="padding:5px 4px;">BSS</td><td style="padding:5px 4px;">Business Support System</td><td class="mono" style="padding:5px 4px;">RF / PHY</td><td style="padding:5px 4px;">Radio Frequency / Physical Layer</td></tr>
       </table>
     </div>
   </div>
@@ -1435,11 +1520,22 @@ const SLICE_STAGES = {
   monitor: 'Continuous SLA monitoring active — ATSF anomaly detection running against slice KPIs',
   decommission: 'NSSI decommission executed — resources released, inventory reconciled'
 };
+const SLICE_STAGE_SOURCES = {
+  create: `<strong>Inputs needed:</strong> S-NSSAI, target QoS profile (5QI/GBR), and a RAN resource template (PRB reservation, scheduling weight).<br>
+    <strong>Where they come from:</strong> either the "Express a business intent" panel further down this tab — an operator picks a plain-language intent, and it's translated into that policy — or, in a real deployment, a formal slice order from the NSMF/OSS layer (e.g. an enterprise customer's contracted SLA). This demo drives Create from the intent panel to keep the chain visible end-to-end.`,
+  modify: `<strong>Inputs needed:</strong> which parameter is changing and the new target (e.g. a wider PRB partition, a relaxed admission-control limit).<br>
+    <strong>Where they come from:</strong> two paths — a manual operator change request (a new ticket or console action), or an automated closed-loop recommendation from a Non-RT RIC rApp reacting to SLA drift it detected during Monitor &amp; Assure. Either way the modification is applied at runtime, without a maintenance window.`,
+  monitor: `<strong>Inputs needed:</strong> live per-slice KPI counters (throughput, latency, PRB share) against the SLA target.<br>
+    <strong>Where they come from:</strong> the same Performance Management (PM) counter stream shown on the FCAPS Monitor tab, filtered down to this slice's S-NSSAI. No separate telemetry path — it's the standard PM feed, sliced.`,
+  decommission: `<strong>Inputs needed:</strong> a decommission trigger and confirmation that no active sessions remain on the slice.<br>
+    <strong>Where they come from:</strong> either an OSS/BSS service-termination order (the customer's contract ended) or an automatic expiry, e.g. a temporary "event-mode" slice built for a stadium event that tears itself down once the event window closes.`
+};
 function setSliceStage(stage){
   ['create','modify','monitor','decommission'].forEach(s=>{
     document.getElementById('stage-'+s).className = (s===stage) ? 'btn' : 'btn ghost';
   });
   logLine('sliceLifecycleLog', SLICE_STAGES[stage], stage==='decommission'?'warn':'act');
+  document.getElementById('sliceStageSource').innerHTML = SLICE_STAGE_SOURCES[stage];
 }
 setSliceStage('create');
 
@@ -1509,13 +1605,12 @@ function applyRoute(){
    ============================================================ */
 const NF_LCM_ACTIONS = ['Instantiate','Heal','Scale','Upgrade','Terminate'];
 const NF_ACTION_TIPS = {
-  'Instantiate':'Stand up a brand-new copy of this network function from scratch.',
-  'Heal':'Automatically detect and recover a network function that has crashed or is misbehaving.',
-  'Scale':'Add or remove capacity for this function based on current demand.',
-  'Upgrade':'Roll out a new software version with no service interruption.',
-  'Terminate':'Cleanly shut down and remove this network function when it\'s no longer needed.'
+  'Instantiate':'Stand up a brand-new copy of a network function from scratch. Adds a new object to the infrastructure table.',
+  'Heal':'Automatically detect and recover a network function that has crashed or is misbehaving. Only does something if the selected object is currently degraded.',
+  'Scale':'Add or remove capacity for the selected function based on current demand.',
+  'Upgrade':'Roll out a new software version on the selected function with no service interruption.',
+  'Terminate':'Cleanly shut down and remove the selected network function when it\'s no longer needed.'
 };
-let nfStatuses = {};
 function renderNfLcm(){
   const grid = document.getElementById('nfLcmGrid');
   grid.innerHTML = NF_LCM_ACTIONS.map(a=>`
@@ -1525,13 +1620,57 @@ function renderNfLcm(){
     </div>`).join('');
 }
 renderNfLcm();
+function updateSelectedBanner(){
+  const el = document.getElementById('nfSelectedText');
+  const obj = INFRA.find(i=>i.id===selectedInfraId);
+  if(!obj){ el.textContent = 'None selected — pick a row in the table to the right, or Instantiate a new one.'; return; }
+  el.innerHTML = `<strong>${obj.id}</strong> · ${tagInfraName(obj.fn)} · ${obj.location} · status: <span class="pill ${statusPill(obj.status)}">${obj.status}</span>`;
+}
 function runNfAction(action){
   const statusEl = document.getElementById('nf-status-'+action);
-  statusEl.textContent='in progress...'; statusEl.style.color='#F2A93B';
-  setTimeout(()=>{
-    statusEl.textContent='completed · status reported upstream';
-    statusEl.style.color='#3FB950';
-  }, 1100);
+  const setBusy = (msg)=>{ statusEl.textContent=msg; statusEl.style.color='#F2A93B'; };
+  const setDone = (msg)=>{ statusEl.textContent=msg; statusEl.style.color='#3FB950'; };
+
+  if(action==='Instantiate'){
+    setBusy('in progress...');
+    const id = 'INF-'+String(++infraSeq).padStart(3,'0');
+    const tpl = INFRA_TEMPLATES[Math.floor(Math.random()*INFRA_TEMPLATES.length)];
+    const obj = {id, fn:tpl.fn(), location:tpl.location(), status:'instantiating', sinceTs:Date.now()};
+    INFRA.unshift(obj);
+    renderInfra();
+    setTimeout(()=>{
+      obj.status='running'; obj.sinceTs=Date.now(); selectedInfraId=obj.id;
+      renderInfra(); updateSelectedBanner();
+      setDone('completed · registered with SMO inventory');
+    }, 1200);
+    return;
+  }
+  const obj = INFRA.find(i=>i.id===selectedInfraId);
+  if(!obj){ setBusy('select an object in the table first'); setTimeout(()=>{statusEl.textContent='idle';statusEl.style.color='';},1600); return; }
+
+  if(action==='Heal'){
+    if(obj.status!=='degraded'){ setDone('no fault detected — nothing to heal'); setTimeout(()=>{statusEl.textContent='idle';statusEl.style.color='';},1600); return; }
+    obj.status='healing'; obj.sinceTs=Date.now(); renderInfra(); updateSelectedBanner();
+    setBusy('healing...');
+    setTimeout(()=>{ obj.status='running'; obj.sinceTs=Date.now(); renderInfra(); updateSelectedBanner(); setDone('completed · recovered, status reported upstream'); }, 1300);
+  } else if(action==='Scale'){
+    obj.status='scaling'; obj.sinceTs=Date.now(); renderInfra(); updateSelectedBanner();
+    setBusy('scaling...');
+    setTimeout(()=>{ obj.status='running'; obj.sinceTs=Date.now(); renderInfra(); updateSelectedBanner(); setDone('completed · capacity adjusted, status reported upstream'); }, 1300);
+  } else if(action==='Upgrade'){
+    obj.status='upgrading'; obj.sinceTs=Date.now(); renderInfra(); updateSelectedBanner();
+    setBusy('upgrading...');
+    setTimeout(()=>{ obj.status='running'; obj.sinceTs=Date.now(); renderInfra(); updateSelectedBanner(); setDone('completed · new version active, status reported upstream'); }, 1300);
+  } else if(action==='Terminate'){
+    obj.status='terminating'; obj.sinceTs=Date.now(); renderInfra(); updateSelectedBanner();
+    setBusy('terminating...');
+    setTimeout(()=>{
+      INFRA.splice(INFRA.findIndex(i=>i.id===obj.id),1);
+      if(selectedInfraId===obj.id) selectedInfraId=null;
+      renderInfra(); updateSelectedBanner();
+      setDone('completed · removed from inventory');
+    }, 1300);
+  }
 }
 
 const INFRA_TIPS = {vDU:'Virtualized Distributed Unit — the real-time radio processing software, running on standard servers instead of dedicated hardware.', 'vCU-CP':'Virtualized Centralized Unit, Control Plane — handles connection setup/teardown for many sites at once.', 'vCU-UP':'Virtualized Centralized Unit, User Plane — carries the actual data traffic for many sites at once.'};
@@ -1539,22 +1678,83 @@ function tagInfraName(fn){
   for(const k of Object.keys(INFRA_TIPS)){ if(fn.startsWith(k)) return term(k,INFRA_TIPS[k]) + fn.slice(k.length); }
   return fn;
 }
-const INFRA = [
-  {fn:'vDU-cluster-07', location:'Edge site — Toronto-West', status:'running'},
-  {fn:'vCU-CP-03', location:'Regional DC — Barrie', status:'running'},
-  {fn:'Non-RT RIC host', location:'Central cloud — Montreal', status:'running'},
-  {fn:'vCU-UP-03', location:'Regional DC — Barrie', status:'scaling'},
+const INFRA_LOCATIONS = ['Edge site — Toronto-West','Edge site — Calgary-North','Edge site — Vancouver-East','Regional DC — Barrie','Regional DC — Ottawa','Central cloud — Montreal','Central cloud — Halifax'];
+const INFRA_TEMPLATES = [
+  {fn:()=>'vDU-cluster-'+String(10+Math.floor(Math.random()*90)).padStart(2,'0'), location:()=>INFRA_LOCATIONS[Math.floor(Math.random()*3)]},
+  {fn:()=>'vCU-CP-'+String(Math.floor(Math.random()*20)).padStart(2,'0'), location:()=>INFRA_LOCATIONS[3+Math.floor(Math.random()*2)]},
+  {fn:()=>'vCU-UP-'+String(Math.floor(Math.random()*20)).padStart(2,'0'), location:()=>INFRA_LOCATIONS[3+Math.floor(Math.random()*2)]},
+  {fn:()=>'Near-RT RIC host-'+String(Math.floor(Math.random()*10)).padStart(2,'0'), location:()=>INFRA_LOCATIONS[5+Math.floor(Math.random()*2)]},
+  {fn:()=>'O-Cloud worker node-'+String(Math.floor(Math.random()*40)).padStart(2,'0'), location:()=>INFRA_LOCATIONS[Math.floor(Math.random()*INFRA_LOCATIONS.length)]},
 ];
+let infraSeq = 100;
+let selectedInfraId = null;
+const TRANSIENT_STATUSES = ['scaling','upgrading','healing','instantiating'];
+function genInfra(n){
+  const rnd = seededRand(11);
+  const now = Date.now();
+  const list = [
+    {id:'INF-001', fn:'vDU-cluster-07', location:'Edge site — Toronto-West', status:'running', sinceTs:now},
+    {id:'INF-002', fn:'vCU-CP-03', location:'Regional DC — Barrie', status:'running', sinceTs:now},
+    {id:'INF-003', fn:'Non-RT RIC host', location:'Central cloud — Montreal', status:'running', sinceTs:now},
+    {id:'INF-004', fn:'vCU-UP-03', location:'Regional DC — Barrie', status:'scaling', sinceTs:now-4000},
+  ];
+  for(let i=list.length;i<n;i++){
+    const tpl = INFRA_TEMPLATES[Math.floor(rnd()*INFRA_TEMPLATES.length)];
+    const statusRoll = rnd();
+    const status = statusRoll<0.83 ? 'running' : statusRoll<0.93 ? 'scaling' : 'degraded';
+    // backdate transient statuses a random amount so they don't all resolve in lockstep on the first sweep
+    const sinceTs = status==='scaling' ? now - Math.floor(rnd()*6000) : now;
+    list.push({id:'INF-'+String(i+1).padStart(3,'0'), fn:tpl.fn(), location:tpl.location(), status, sinceTs});
+  }
+  return list;
+}
+const INFRA = genInfra(100);
+function statusPill(status){
+  if(status==='running') return 'allow';
+  if(status==='degraded') return 'priority';
+  return 'fcfs';
+}
+function selectInfra(id){
+  selectedInfraId = id;
+  renderInfra();
+  updateSelectedBanner();
+}
 function renderInfra(){
-  const rows = INFRA.map(i=>`<tr style="border-bottom:1px solid var(--border);">
-    <td style="padding:7px 4px;">${tagInfraName(i.fn)}</td>
+  const rows = INFRA.map(i=>`<tr style="border-bottom:1px solid var(--border);cursor:pointer;${i.id===selectedInfraId?'background:#241c0f;':''}" onclick="selectInfra('${i.id}')">
+    <td style="padding:7px 4px;">${i.id===selectedInfraId?'▸ ':''}${tagInfraName(i.fn)}</td>
     <td style="padding:7px 4px;color:var(--muted);">${i.location}</td>
-    <td style="padding:7px 4px;text-align:right;"><span class="pill ${i.status==='running'?'allow':'fcfs'}">${i.status}</span></td>
+    <td style="padding:7px 4px;text-align:right;"><span class="pill ${statusPill(i.status)}">${i.status}</span></td>
   </tr>`).join('');
-  document.getElementById('infraTable').innerHTML = `<tr style="font-size:11px;color:var(--faint);text-transform:uppercase;">
+  document.getElementById('infraTable').innerHTML = `<tr class="sticky-head" style="font-size:11px;color:var(--faint);text-transform:uppercase;">
     <td style="padding:6px 4px;">Function</td><td>Location</td><td style="text-align:right;">Live status</td></tr>${rows}`;
+  const chip = document.getElementById('infraCountChip'); if(chip) chip.textContent = INFRA.length+' objects · scroll for more';
 }
 renderInfra();
+updateSelectedBanner();
+/* live drift: occasionally a running object degrades on its own, so there's something to Heal */
+setInterval(()=>{
+  const degradedCount = INFRA.filter(i=>i.status==='degraded').length;
+  if(degradedCount<8 && Math.random()<0.22){
+    const running = INFRA.filter(i=>i.status==='running');
+    if(running.length){
+      const victim = running[Math.floor(Math.random()*running.length)];
+      victim.status = 'degraded'; victim.sinceTs = Date.now();
+      renderInfra();
+      if(victim.id===selectedInfraId) updateSelectedBanner();
+    }
+  }
+}, 5000);
+/* safety net: nothing stays scaling/upgrading/healing/instantiating forever — it settles back to running on its own after a while, the way real infra eventually converges */
+setInterval(()=>{
+  const now = Date.now();
+  let changed = false;
+  INFRA.forEach(i=>{
+    if(TRANSIENT_STATUSES.includes(i.status) && (now - i.sinceTs) > 9000){
+      i.status = 'running'; i.sinceTs = now; changed = true;
+    }
+  });
+  if(changed){ renderInfra(); updateSelectedBanner(); }
+}, 3000);
 
 /* ============================================================
    ZERO-TOUCH ROLLOUT PIPELINE
@@ -1625,11 +1825,17 @@ function toggleSecurityControl(i){
 renderSecurity();
 const ARTIFACTS = ['rApp:esm-v1.2.0.tar','helm-chart:non-rt-ric-4.1','container:mro-optimizer:sha256-a91f...','sbom:cloud-infra-manifest.json'];
 let artIdx=0;
+function updateNextArtifactHint(){
+  const el = document.getElementById('nextArtifactHint');
+  if(el) el.innerHTML = `Next in queue: <span class="mono" style="color:var(--cyan);">${ARTIFACTS[artIdx % ARTIFACTS.length]}</span>`;
+}
 function verifyArtifact(){
   const a = ARTIFACTS[artIdx % ARTIFACTS.length]; artIdx++;
   logLine('supplyChainLog', `Verifying provenance for ${a} ... signature valid, checksum matches build attestation`, 'act');
+  updateNextArtifactHint();
 }
 logLine('supplyChainLog','Supply-chain verification service ready','info');
+updateNextArtifactHint();
 
 /* ============================================================
    OPENNESS SCORECARD
@@ -1808,12 +2014,62 @@ function goToTab(tab){
 /* ============================================================
    FCAPS MONITOR
    ============================================================ */
-let alarms = [
-  {id:'A-1001', sev:'critical', src:'CELL-104', text:'Site outage — no response on O1 heartbeat', ts:Date.now()-1000*60*6, ack:false},
-  {id:'A-1002', sev:'major', src:'CELL-107', text:'PRB utilization sustained > 90% for 15 min', ts:Date.now()-1000*60*22, ack:false},
-  {id:'A-1003', sev:'minor', src:'vCU-UP-03', text:'CPU utilization approaching soft threshold', ts:Date.now()-1000*60*40, ack:true},
-  {id:'A-1004', sev:'warning', src:'CELL-102', text:'Handover failure rate trending upward', ts:Date.now()-1000*60*55, ack:false},
+/* deterministic-ish PRNG so re-renders don't jitter the fake graphs/snapshots */
+function seededRand(seed){ let s = seed % 2147483647; if(s<=0) s += 2147483646;
+  return function(){ s = (s*16807)%2147483647; return (s-1)/2147483646; }; }
+function hashStr(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h*31 + s.charCodeAt(i))|0; } return Math.abs(h)||1; }
+
+const ALARM_TEXTS = [
+  'Site outage — no response on O1 heartbeat',
+  'PRB utilization sustained > 90% for 15 min',
+  'CPU utilization approaching soft threshold',
+  'Handover failure rate trending upward',
+  'VSWR out of tolerance on RF port',
+  'Fronthaul (O-FH) link CRC error rate elevated',
+  'GPS/PTP timing sync holdover exceeded',
+  'Cell downtilt drifted outside planned range',
+  'Backhaul link latency exceeding SLA target',
+  'Excessive PRACH false-detection rate',
+  'RRC connection setup failures spiking',
+  'Thermal threshold exceeded on RU enclosure',
+  'rApp/xApp license utilization approaching cap',
+  'NTP/PTP clock drift detected',
+  'Interference detected on adjacent carrier',
+  'CU-UP session capacity near limit',
+  'Neighbor relation flapping detected',
+  'Unexpected reboot on DU',
+  'Fan failure reported on cabinet',
+  'Battery backup below threshold',
+  'Cell reselection priority conflict detected',
+  'S1/NG interface heartbeat delayed',
+  'Excessive UE (User Equipment) attach failures',
+  'Slice SLA breach — eMBB throughput target missed',
 ];
+function genAlarms(n){
+  const rnd = seededRand(42);
+  const sevs = ['critical','major','minor','warning'];
+  const srcPool = (cells.length? cells.map(c=>c.id) : ['CELL-100','CELL-101']).concat(['vCU-UP-01','vCU-UP-02','vCU-UP-03','vCU-CP-01','vDU-02']);
+  const list = [
+    {id:'A-1001', sev:'critical', src:'CELL-104', text:'Site outage — no response on O1 heartbeat', ts:Date.now()-1000*60*6, ack:false},
+    {id:'A-1002', sev:'major', src:'CELL-107', text:'PRB utilization sustained > 90% for 15 min', ts:Date.now()-1000*60*22, ack:false},
+    {id:'A-1003', sev:'minor', src:'vCU-UP-03', text:'CPU utilization approaching soft threshold', ts:Date.now()-1000*60*40, ack:true},
+    {id:'A-1004', sev:'warning', src:'CELL-102', text:'Handover failure rate trending upward', ts:Date.now()-1000*60*55, ack:false},
+  ];
+  for(let i=list.length; i<n; i++){
+    const sevRoll = rnd();
+    const sev = sevRoll<0.12?'critical':sevRoll<0.35?'major':sevRoll<0.7?'minor':'warning';
+    list.push({
+      id:'A-'+(1001+i),
+      sev,
+      src:srcPool[Math.floor(rnd()*srcPool.length)],
+      text:ALARM_TEXTS[Math.floor(rnd()*ALARM_TEXTS.length)],
+      ts:Date.now()-1000*60*(60+Math.floor(rnd()*1400)),
+      ack: rnd()<0.3
+    });
+  }
+  return list;
+}
+let alarms = genAlarms(100);
 function sevColor(s){ return {critical:'#F85149',major:'#F2A93B',minor:'#4FD1C5',warning:'#8B949E'}[s]; }
 function renderAlarms(){
   document.getElementById('alarmList').innerHTML = alarms.map(a=>`
@@ -1823,30 +2079,64 @@ function renderAlarms(){
         <span class="chip" style="text-transform:uppercase;">${a.sev}</span>
       </div>
       <div class="desc" style="margin:6px 0 8px;">${a.text}</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
         <span class="trend" style="margin:0;">${Math.round((Date.now()-a.ts)/60000)} min ago</span>
-        ${a.ack ? '<span class="pill allow">acknowledged</span>' : `<button class="btn ghost" onclick="ackAlarm('${a.id}')">Acknowledge</button>`}
+        <span style="display:flex;gap:6px;">
+          ${a.ack ? '<span class="pill allow">acknowledged</span>' : `<button class="btn ghost" onclick="ackAlarm('${a.id}')">Acknowledge</button>`}
+          <button class="btn ghost" onclick="cancelAlarm('${a.id}')" title="Remove this alarm from the list">Cancel</button>
+        </span>
       </div>
     </div>`).join('');
   document.getElementById('ovAlarms').querySelector('.val').textContent = alarms.filter(a=>!a.ack).length;
+  const chip = document.getElementById('alarmCountChip'); if(chip) chip.textContent = alarms.length+' total · scroll for more';
 }
 function ackAlarm(id){
   const a = alarms.find(x=>x.id===id); if(a) a.ack=true;
   renderAlarms();
 }
+function cancelAlarm(id){
+  alarms = alarms.filter(x=>x.id!==id);
+  renderAlarms();
+}
 renderAlarms();
 
 const PM_KPIS = [
-  {name:'RAN Availability', val:99.982, unit:'%', good:true, min:99.5, max:100},
-  {name:'Call Setup Success Rate', val:98.7, unit:'%', good:true, min:95, max:100},
-  {name:'Avg. DL Throughput / cell', val:187, unit:'Mbps', good:true, min:120, max:260},
-  {name:'Drop Call Rate', val:0.42, unit:'%', good:false, min:0.05, max:2.5},
+  {name:term('RAN Availability','Percentage of time the network is up and reachable — cannot exceed 100%.'), val:99.982, unit:'%', good:true, min:99.5, max:100},
+  {name:term('Call Setup Success Rate','Percentage of call attempts that successfully establish a connection.'), val:98.7, unit:'%', good:true, min:95, max:100},
+  {name:term('Avg. DL Throughput / cell','Average Downlink (network → device) data rate delivered per cell.'), val:187, unit:'Mbps', good:true, min:120, max:260},
+  {name:term('Drop Call Rate','Percentage of connected calls that are unexpectedly terminated mid-session.'), val:0.42, unit:'%', good:false, min:0.05, max:2.5},
+  {name:term('Avg. UL Throughput / cell','Average Uplink (device → network) data rate delivered per cell.'), val:38, unit:'Mbps', good:true, min:15, max:60},
+  {name:term('PRB Utilization (network avg)','Physical Resource Block utilization — how much of the available radio capacity is in use, averaged across cells.'), val:61, unit:'%', good:true, min:40, max:95},
+  {name:term('Handover Success Rate','Percentage of handovers — a device switching from one cell to another — that complete without a dropped connection.'), val:97.4, unit:'%', good:true, min:90, max:100},
+  {name:term('RRC Setup Success Rate','Percentage of Radio Resource Control setup attempts — a device establishing its radio-level connection — that succeed.'), val:99.1, unit:'%', good:true, min:95, max:100},
+  {name:term('Packet Error Rate (URLLC slice)','Fraction of packets lost or corrupted for the Ultra-Reliable Low-Latency slice, which targets a near-zero rate.'), val:0.008, unit:'%', good:true, min:0.001, max:0.5},
+  {name:term('Avg. Latency (PDB compliance)','Average one-way delay against the Packet Delay Budget — the max acceptable delay before it counts as a QoS violation.'), val:6.2, unit:'ms', good:true, min:2, max:15},
 ];
+/* fixed synthetic 24h trend per KPI, generated once so the popover doesn't jitter on re-render */
+PM_KPIS.forEach((k,i)=>{
+  const rnd = seededRand(hashStr(k.name)+i);
+  let v = 50; const pts=[];
+  for(let p=0;p<18;p++){ v += (rnd()-0.5)*20; v = Math.max(6,Math.min(94,v)); pts.push(v); }
+  k.fakeTrend = pts;
+});
+function sparkSVG(values, color){
+  const w=190,h=60,pad=5;
+  const step = (w-2*pad)/(values.length-1);
+  const pts = values.map((v,i)=>`${(pad+i*step).toFixed(1)},${(h-pad-(v/100)*(h-2*pad)).toFixed(1)}`).join(' ');
+  const dots = values.map((v,i)=>`<circle cx="${(pad+i*step).toFixed(1)}" cy="${(h-pad-(v/100)*(h-2*pad)).toFixed(1)}" r="1.5" fill="${color}"/>`).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" xmlns="http://www.w3.org/2000/svg">
+    <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.8"/>${dots}</svg>`;
+}
 function renderPmKpis(){
   document.getElementById('pmKpiList').innerHTML = PM_KPIS.map(k=>`
-    <div class="rapp-card" style="margin-bottom:8px;padding:11px 14px;display:flex;justify-content:space-between;align-items:center;">
+    <div class="rapp-card kpi-hover-wrap" style="margin-bottom:8px;padding:11px 14px;display:flex;justify-content:space-between;align-items:center;">
       <span style="font-size:12.5px;">${k.name}</span>
       <span class="mono" style="font-size:14px;color:${k.good?'var(--success)':'var(--amber)'};">${k.val}${k.unit}</span>
+      <div class="hover-pop">
+        <div class="hp-title">24h trend (synthetic)</div>
+        ${sparkSVG(k.fakeTrend, k.good?'#3FB950':'#F2A93B')}
+        <div class="hp-note">Illustrative trend line, not live measurement history — the current value above is real-time.</div>
+      </div>
     </div>`).join('');
   document.getElementById('ovAvail').querySelector('.val').textContent = PM_KPIS[0].val;
 }
@@ -1860,13 +2150,35 @@ setInterval(()=>{
   renderPmKpis();
 },2500);
 
-let cmChanges = [
-  {ts:'14:02:11', entity:'CELL-104', param:'pMax', old:'23 dBm', to:'20 dBm', by:'Energy Saving Management'},
-  {ts:'13:58:44', entity:'CELL-107', param:'hoHysteresis', old:'2 dB', to:'3 dB', by:'Mobility Robustness Optimization'},
-  {ts:'13:41:09', entity:'CELL-102', param:'a3Offset', old:'1 dB', to:'1 dB', by:'PCE audit — no change needed'},
-];
+const CM_PARAMS = ['pMax','hoHysteresis','a3Offset','timeToTrigger','qRxLevMin','cellReselectionPriority','referenceSignalPower','prachConfigIndex','sMeasure','qOffsetCell','maxNumberROHC','t-Reselection'];
+const CM_ACTORS = ['Energy Saving Management','Mobility Robustness Optimization','Mobility Load Balancing','Coverage & Capacity Optimization','Automatic Neighbor Relation','PCE audit — no change needed','Zero-touch commissioning','Manual override — NOC engineer'];
+function genCmChanges(n){
+  const rnd = seededRand(7);
+  const srcPool = (cells.length? cells.map(c=>c.id) : ['CELL-100']).concat(['vCU-UP-01','vCU-UP-02','vCU-CP-01','vDU-02']);
+  const list = [
+    {ts:'14:02:11', entity:'CELL-104', param:'pMax', old:'23 dBm', to:'20 dBm', by:'Energy Saving Management'},
+    {ts:'13:58:44', entity:'CELL-107', param:'hoHysteresis', old:'2 dB', to:'3 dB', by:'Mobility Robustness Optimization'},
+    {ts:'13:41:09', entity:'CELL-102', param:'a3Offset', old:'1 dB', to:'1 dB', by:'PCE audit — no change needed'},
+  ];
+  let minsAgo = 24;
+  for(let i=list.length;i<n;i++){
+    minsAgo += 1 + Math.floor(rnd()*9);
+    const d = new Date(Date.now()-minsAgo*60000);
+    const ts = d.toTimeString().slice(0,8);
+    const oldV = (1+Math.floor(rnd()*23));
+    const delta = (rnd()<0.5?-1:1)*(1+Math.floor(rnd()*3));
+    list.push({
+      ts, entity:srcPool[Math.floor(rnd()*srcPool.length)],
+      param:CM_PARAMS[Math.floor(rnd()*CM_PARAMS.length)],
+      old:oldV+' units', to:Math.max(0,oldV+delta)+' units',
+      by:CM_ACTORS[Math.floor(rnd()*CM_ACTORS.length)]
+    });
+  }
+  return list;
+}
+let cmChanges = genCmChanges(100);
 function renderCm(){
-  document.getElementById('cmTable').innerHTML = `<tr style="font-size:10.5px;color:var(--faint);text-transform:uppercase;">
+  document.getElementById('cmTable').innerHTML = `<tr class="sticky-head" style="font-size:10.5px;color:var(--faint);text-transform:uppercase;">
     <td style="padding:5px 4px;">Time</td><td>Entity</td><td>Param</td><td>Old → New</td><td>By</td></tr>` +
     cmChanges.map(c=>`<tr style="border-bottom:1px solid var(--border);">
       <td class="mono" style="padding:6px 4px;color:var(--faint);">${c.ts}</td>
@@ -1878,12 +2190,39 @@ function renderCm(){
 renderCm();
 
 let traces = [{id:'TR-01', target:'CELL-104', tech:'5G NR', status:'complete'}];
+function traceSnapshot(t){
+  const rnd = seededRand(hashStr(t.id));
+  const rrc = (8+rnd()*32).toFixed(1);
+  const dl = Math.round(45+rnd()*270);
+  const ul = Math.round(8+rnd()*80);
+  const loss = (0.01+rnd()*1.1).toFixed(2);
+  const ho = Math.floor(rnd()*6);
+  const dur = Math.round(4+rnd()*32);
+  return {rrc,dl,ul,loss,ho,dur};
+}
 function renderTrace(){
-  document.getElementById('traceTable').innerHTML = `<tr style="font-size:10.5px;color:var(--faint);text-transform:uppercase;">
+  document.getElementById('traceTable').innerHTML = `<tr class="sticky-head" style="font-size:10.5px;color:var(--faint);text-transform:uppercase;">
     <td style="padding:5px 4px;">Session</td><td>Target</td><td>Tech</td><td style="text-align:right;">Status</td></tr>` +
-    traces.map(t=>`<tr style="border-bottom:1px solid var(--border);">
+    traces.map(t=>{
+      const statusCell = t.status==='complete' ? `
+        <span class="hover-pop-wrap trace-hover-wrap">
+          <span class="pill allow">complete</span>
+          <div class="hover-pop">
+            <div class="hp-title">Trace analysis snapshot (synthetic)</div>
+            ${(()=>{const s=traceSnapshot(t); return `
+            <div class="hp-row"><span>RRC setup time</span><span>${s.rrc} ms</span></div>
+            <div class="hp-row"><span>DL throughput</span><span>${s.dl} Mbps</span></div>
+            <div class="hp-row"><span>UL throughput</span><span>${s.ul} Mbps</span></div>
+            <div class="hp-row"><span>Packet error rate</span><span>${s.loss}%</span></div>
+            <div class="hp-row"><span>Handovers</span><span>${s.ho}</span></div>
+            <div class="hp-row"><span>Session duration</span><span>${s.dur}s</span></div>`;})()}
+            <div class="hp-note">Illustrative snapshot for this demo — not a decoded real trace file.</div>
+          </div>
+        </span>` : `<span class="pill fcfs">${t.status}</span>`;
+      return `<tr style="border-bottom:1px solid var(--border);">
       <td class="mono" style="padding:6px 4px;">${t.id}</td><td style="padding:6px 4px;">${t.target}</td>
-      <td style="padding:6px 4px;">${t.tech}</td><td style="padding:6px 4px;text-align:right;"><span class="pill ${t.status==='complete'?'allow':'fcfs'}">${t.status}</span></td></tr>`).join('');
+      <td style="padding:6px 4px;">${t.tech}</td><td style="padding:6px 4px;text-align:right;">${statusCell}</td></tr>`;
+    }).join('');
 }
 renderTrace();
 function startTrace(){

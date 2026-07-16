@@ -363,8 +363,14 @@ input[type=text],select{
 
     <div class="grid cols-3" style="margin-bottom:16px;">
       <div class="card kpi-card"><h3><span class="term" data-tip="Times a problem was detected and fixed by the network itself today, without a person being paged.">Issues Resolved Automatically</span></h3><div class="kpi ok" id="ovAutoFixed"><span class="val">--</span><span class="unit">today</span></div><div class="trend">No engineer paged</div></div>
-      <div class="card kpi-card"><h3><span class="term" data-tip="OPEX = Operating Expenses — the ongoing cost of running the network (power, labor, maintenance), as opposed to one-time purchase cost.">Est. Annual OPEX Saved</span></h3><div class="kpi ok"><span class="val">$2.4M</span></div><div class="trend">Energy + automation, illustrative</div></div>
+      <div class="card kpi-card"><h3><span class="term" data-tip="OPEX = Operating Expenses — the ongoing cost of running the network (power, labor, maintenance), as opposed to one-time purchase cost. This figure is illustrative here; in a real deployment it would come from connecting to and configuring an external system — billing/finance or OSS/BSS — to pull actual energy and labor cost data, not from a live measurement inside the SMO itself.">Est. Annual OPEX Saved</span></h3><div class="kpi ok"><span class="val">$2.4M</span></div><div class="trend">Energy + automation, illustrative</div></div>
       <div class="card kpi-card"><h3><span class="term" data-tip="How long, on average, between a problem starting and the network (or a person) actually fixing it.">Avg. Time to Detect &amp; Resolve</span></h3><div class="kpi ok"><span class="val">4.2</span><span class="unit">min</span></div><div class="trend">vs. hours, manual process</div></div>
+    </div>
+
+    <div class="grid cols-3" style="margin-bottom:16px;">
+      <div class="card kpi-card" style="cursor:pointer;" onclick="goToTab('fcaps')"><h3><span class="term" data-tip="Warnings raised when something in the network needs attention — like a check-engine light for a cell site.">Active Alarms</span></h3><div class="kpi bad" id="ovAlarms"><span class="val">--</span><span class="unit">open</span></div><div class="trend">Fault Management — click to view</div></div>
+      <div class="card kpi-card" style="cursor:pointer;" onclick="goToTab('fcaps')"><h3><span class="term" data-tip="The percentage of time the network is actually working and reachable — 100% would mean zero downtime.">Network Availability</span></h3><div class="kpi ok" id="ovAvail"><span class="val">--</span><span class="unit">%</span></div><div class="trend">Rolling 24h, all domains — click to view</div></div>
+      <div class="card kpi-card" style="cursor:pointer;" onclick="goToTab('loop')"><h3><span class="term" data-tip="'rApp' = an automated behavior running on the network's intelligence layer (the Non-RT RIC). This counts how many are currently switched on.">rApps in Closed Loop</span></h3><div class="kpi ok" id="ovRapps"><span class="val">--</span><span class="unit">active</span></div><div class="trend">Non-RT RIC — click to view</div></div>
     </div>
 
     <div class="card" style="margin-bottom:16px;">
@@ -373,12 +379,6 @@ input[type=text],select{
         Grouped by function — RAN architecture, interfaces, FCAPS assurance, cloud &amp; automation, intelligence
         (Non-RT RIC / Near-RT RIC / rApps / AI-ML), slicing &amp; conflict, and security. Click a cluster to jump straight to it.
       </div>
-    </div>
-
-    <div class="grid cols-3" style="margin-bottom:16px;">
-      <div class="card kpi-card" style="cursor:pointer;" onclick="goToTab('fcaps')"><h3><span class="term" data-tip="Warnings raised when something in the network needs attention — like a check-engine light for a cell site.">Active Alarms</span></h3><div class="kpi bad" id="ovAlarms"><span class="val">--</span><span class="unit">open</span></div><div class="trend">Fault Management — click to view</div></div>
-      <div class="card kpi-card" style="cursor:pointer;" onclick="goToTab('fcaps')"><h3><span class="term" data-tip="The percentage of time the network is actually working and reachable — 100% would mean zero downtime.">Network Availability</span></h3><div class="kpi ok" id="ovAvail"><span class="val">--</span><span class="unit">%</span></div><div class="trend">Rolling 24h, all domains — click to view</div></div>
-      <div class="card kpi-card" style="cursor:pointer;" onclick="goToTab('loop')"><h3><span class="term" data-tip="'rApp' = an automated behavior running on the network's intelligence layer (the Non-RT RIC). This counts how many are currently switched on.">rApps in Closed Loop</span></h3><div class="kpi ok" id="ovRapps"><span class="val">--</span><span class="unit">active</span></div><div class="trend">Non-RT RIC — click to view</div></div>
     </div>
 
     <div class="rapp-grid" id="clusterGrid"></div>
@@ -1500,7 +1500,7 @@ function loadSample(){
   document.getElementById('importInput').value = JSON.stringify(SAMPLE_DESCRIPTOR, null, 2);
 }
 
-const VALID_ALGORITHMS = ['cell-sleep-energy-saving','mobility-robustness-optimization','load-balancing-offload','cell-outage-compensation'];
+const VALID_ALGORITHMS = ['cell-sleep-energy-saving','mobility-robustness-optimization','load-balancing-offload','cell-outage-compensation','anr-neighbor-discovery','pci-reuse-optimization'];
 
 function importRapp(){
   const statusEl = document.getElementById('importStatus');

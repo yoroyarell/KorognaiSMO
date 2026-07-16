@@ -283,6 +283,7 @@ input[type=text],select{
     <div class="tab" data-tab="trust"><span class="term below" data-tip="How the platform proves it's secure — not just claims it, but shows evidence.">Security &amp; Trust</span></div>
     <div class="tab" data-tab="scorecard"><span class="term below" data-tip="A scored evaluation of how open and vendor-neutral this platform actually is, against six industry-standard principles.">Openness Scorecard</span></div>
     <div class="tab" data-tab="docs"><span class="term below" data-tip="A full written explanation of every tab, every term, and every simulated scenario in this demo.">Documentation</span></div>
+    <div class="tab" data-tab="dq"><span class="term below" data-tip="50 public-standards-based design questions for evaluating any SMO platform — and exactly where this demo answers each one.">50 Design Questions</span></div>
   </div>
 
   <!-- ============ OVERVIEW ============ -->
@@ -842,6 +843,26 @@ input[type=text],select{
         <tr><td class="mono" style="padding:5px 4px;">NF / LCM</td><td style="padding:5px 4px;">Network Function / Lifecycle Mgmt</td><td class="mono" style="padding:5px 4px;">PCI</td><td style="padding:5px 4px;">Physical Cell Identity</td></tr>
       </table>
     </div>
+  </div>
+
+  <!-- ============ 50 DESIGN QUESTIONS ============ -->
+  <div class="panel" id="panel-dq">
+    <div class="card" style="margin-bottom:16px;border-color:var(--amber);">
+      <h3 style="color:var(--amber);">About these 50 questions</h3>
+      <div style="font-size:12.5px;color:var(--text);line-height:1.6;">
+        A public-standards-based series of 50 design questions for evaluating any SMO platform — grounded in O-RAN Alliance,
+        3GPP, TM Forum, ETSI, NIST, and CIS material, not any vendor's internal documentation. 224 specific questions in total,
+        grouped into 8 themes below. Each topic shows exactly where — and how honestly — this demo answers it, including a
+        few places it deliberately doesn't, rather than pretending full coverage.
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="dqFilter" placeholder="Filter by keyword..." style="max-width:300px;" oninput="renderDQ()">
+        <span class="mono" style="font-size:11px;color:var(--faint);" id="dqCount"></span>
+      </div>
+    </div>
+    <div id="dqGroups"></div>
   </div>
 
   <div class="footer-note">
@@ -1860,6 +1881,384 @@ function updateOverviewRappCount(){
 }
 setInterval(updateOverviewRappCount, 1500);
 updateOverviewRappCount();
+
+const DESIGN_QUESTIONS = [
+  {num:1, title:'Operational data exposure', headline:'How should operational network data be exposed?', tab:'openness', tabLabel:'Data & Openness', answer:'The coverage matrix on Data & Openness shows exactly which domains (FM, PM, CM, Topology) are exposed vs. internal-only, per vendor — not asserted in a slide.', questions:[
+      "Which data domains are exposed through open, documented interfaces?",
+      "Can data be routed to an operator\'s own systems without vendor-specific tooling?",
+      "Are the interface and schema specifications publicly available?",
+      "Is data access governed by open APIs rather than one-off custom exports?"
+  ]},
+  {num:2, title:'Decoupling the data layer', headline:'Should the data layer be decoupled from the management platform?', tab:'openness', tabLabel:'Data & Openness', answer:'The disconnect/reconnect simulator proves closed loops keep running when the external data platform is unreachable — intelligence isn\'t welded to one internal store.', questions:[
+      "Can applications declare and consume data from an external, operator-chosen source?",
+      "Is external data sourcing a documented, supported configuration?",
+      "What platform functions still depend on the internal data store?",
+      "How is consistency maintained between internal and external data?"
+  ]},
+  {num:3, title:'System of record for telemetry', headline:'Where should the system of record for network telemetry live?', tab:'fcaps', tabLabel:'FCAPS Monitor', answer:'FCAPS Monitor streams live FM/PM/CM/trace data, and Data & Openness shows it routed to a chosen endpoint self-serve rather than one fixed internal system of record.', questions:[
+      "Can the platform forward telemetry to an external endpoint in real time?",
+      "What latency targets are documented for each data domain?",
+      "Are there volume or licensing constraints on data export?",
+      "Is delivery guaranteed and recoverable after an interruption?",
+      "Can the telemetry feed support AI/ML training and inference pipelines?"
+  ]},
+  {num:4, title:'Open data schemas', headline:'In what formats should data cross system boundaries?', tab:'import', tabLabel:'Import rApp', answer:'The Import rApp descriptor schema (rAppId, requiredServices, exposedServices, policyType) is a concrete example of a documented, open schema rather than a proprietary format.', questions:[
+      "Are data outputs aligned to open, published schemas?",
+      "Is a complete schema catalogue and registry available?",
+      "How are proprietary extensions or model deviations documented?",
+      "Are raw inputs mapped to the normalised output schema?",
+      "Are schemas stable enough to support reproducible AI/ML features?"
+  ]},
+  {num:5, title:'Self-serve configuration', headline:'Who should control data-routing configuration?', tab:'openness', tabLabel:'Data & Openness', answer:'Directly demonstrated: redirect a data domain to a new endpoint with one form, applied immediately — no ticket, no maintenance window.', questions:[
+      "Can endpoints and destinations be reconfigured self-service?",
+      "Is configuration independently settable per data domain?",
+      "Does a change require a maintenance window or a vendor ticket?",
+      "Is configuration exposed through an API as well as a console?"
+  ]},
+  {num:6, title:'Data coverage', headline:'How complete is the exposed data set?', tab:'openness', tabLabel:'Data & Openness', answer:'The coverage matrix deliberately shows gaps — some vendor/domain combinations are marked internal-only rather than pretending everything is open.', questions:[
+      "Which data types are exposed versus retained internally only?",
+      "Are raw counters available, not just aggregated KPIs?",
+      "Is coverage equivalent across different underlying network-element vendors?",
+      "Is a data-coverage matrix available for review?"
+  ]},
+  {num:7, title:'Resilience under disconnection', headline:'What happens to control loops if an external data platform is unreachable?', tab:'openness', tabLabel:'Data & Openness', answer:'Directly demonstrated: trigger a disconnect and watch local buffering keep closed loops stable, then a clean catch-up sync on reconnect.', questions:[
+      "How long can control loops operate without the external data platform?",
+      "What state is buffered locally during an outage?",
+      "Is reconnection and data catch-up automatic?",
+      "Is any data lost during a disconnection event?"
+  ]},
+  {num:8, title:'AI/ML integration', headline:'How should SMO intelligence integrate with an operator\'s AI/ML stack?', tab:'loop', tabLabel:'Closed Loop', answer:'The plain-language Copilot toggle on Closed Loop shows an AI-generated explanation alongside the technical log — AI as an oversight layer, not a black box replacing FCAPS.', questions:[
+      "Can intelligence functions consume from and contribute to existing data platforms?",
+      "Are model and data interfaces open and documented?",
+      "Which standard interfaces support external analytics and rApps?",
+      "Is the platform\'s AI tooling optional rather than mandatory?"
+  ]},
+  {num:9, title:'Cloud resource management', headline:'How are cloud infrastructure resources discovered and managed?', tab:'cloud', tabLabel:'Cloud & NF Lifecycle', answer:'The infrastructure visibility table shows exactly where each function runs and its live status, from a single queryable view.', questions:[
+      "Are infrastructure interfaces standards-based and documented?",
+      "Can the platform manage infrastructure from multiple suppliers?",
+      "Which standard interface profiles are supported?",
+      "Is conformance to those interfaces independently testable?"
+  ]},
+  {num:10, title:'Standardised interfaces', headline:'Which standard interfaces govern infrastructure and deployment?', tab:'ranarch', tabLabel:'RAN Architecture', answer:'The full O1/O2/A1/E2/F1/E1/O-FH interface map is the direct answer — every connection is a named, standard interface, not a proprietary link.', questions:[
+      "Which standardised deployment profiles are implemented?",
+      "Is more than one profile supported for heterogeneous clouds?",
+      "Is conformance independently verifiable?",
+      "How are profile versions and upgrades handled?"
+  ]},
+  {num:11, title:'NF lifecycle automation', headline:'How is the full lifecycle of cloud network functions automated?', tab:'cloud', tabLabel:'Cloud & NF Lifecycle', answer:'Instantiate/Heal/Scale/Upgrade/Terminate are each individually triggerable in this demo, not just described as a roadmap item.', questions:[
+      "Which lifecycle actions are automated end to end?",
+      "Is per-operation status exposed through the interface?",
+      "Are lifecycle operations driven through standard interfaces?",
+      "Can higher-level orchestration trigger and monitor these actions?",
+      "Can AI/ML logic safely trigger and observe lifecycle actions?"
+  ]},
+  {num:12, title:'Infrastructure visibility', headline:'What visibility exists into deployment and infrastructure state?', tab:'cloud', tabLabel:'Cloud & NF Lifecycle', answer:'The same infrastructure table — live status per function, one queryable view rather than per-vendor tooling.', questions:[
+      "Can the platform report where each function is deployed?",
+      "Is the live state of each operation queryable?",
+      "Is this exposed through an open interface?",
+      "Is the information real-time or periodically refreshed?",
+      "Is exposed state reliable enough for AI/ML to reason over?"
+  ]},
+  {num:13, title:'Securing deployment artifacts', headline:'How are sensitive deployment artifacts protected?', tab:'trust', tabLabel:'Security & Trust', answer:'The artifact-verification log demonstrates checking rApp packages, Helm charts, and container images against signatures before trust is extended.', questions:[
+      "Is there a defined security model for secrets and credentials?",
+      "Are confidentiality and integrity protections auditable?",
+      "How is access to sensitive artifacts controlled and logged?",
+      "Are secrets encrypted at rest and in transit?"
+  ]},
+  {num:14, title:'Service orchestration', headline:'How are infrastructure and network-function changes coordinated?', tab:'zerotouch', tabLabel:'Zero-Touch Rollout', answer:'The 13-step Zero-Touch pipeline shows infrastructure and NF changes coordinated end-to-end, not deployed in isolation.', questions:[
+      "Does a service-orchestration layer coordinate infrastructure and NF changes?",
+      "Is inventory kept aligned with actual state?",
+      "Are results reported back to higher-level logic?",
+      "Can orchestration express intent rather than only low-level steps?",
+      "Can AI/ML-driven intent be applied under deterministic guardrails?"
+  ]},
+  {num:15, title:'Inventory and topology', headline:'How is inventory and topology kept current?', tab:'fcaps', tabLabel:'FCAPS Monitor', answer:'The Topology & Inventory summary on FCAPS Monitor is the live, single-source-of-truth view this question is really asking about.', questions:[
+      "Is inventory updated automatically as lifecycle actions occur?",
+      "Do assurance and orchestration work from current state?",
+      "How are discrepancies detected and reconciled?",
+      "Is topology exposed for external consumers to query?"
+  ]},
+  {num:16, title:'Heterogeneous cloud', headline:'Can orchestration span heterogeneous clouds?', tab:'cloud', tabLabel:'Cloud & NF Lifecycle', answer:'The infrastructure table intentionally shows functions running across different physical/cloud locations, not one homogeneous environment.', questions:[
+      "Are multiple deployment profiles and infrastructure types supported?",
+      "Does orchestration logic remain consistent across them?",
+      "How is heterogeneity handled operationally?",
+      "Can new infrastructure types be added without re-architecting?"
+  ]},
+  {num:17, title:'Zero-touch integration', headline:'What does zero-touch integration aim to achieve?', tab:'zerotouch', tabLabel:'Zero-Touch Rollout', answer:'The whole tab is the direct answer: a governed, 13-step pipeline from onboarding through post-launch validation.', questions:[
+      "Which integration steps are automated versus manual?",
+      "What scale and time savings are documented?",
+      "How is the automation governed?",
+      "Where does a human remain in the loop, and why?",
+      "How does the platform incorporate AI/ML into higher-autonomy operation?"
+  ]},
+  {num:18, title:'Parameter generation', headline:'How are configuration and parameter sets produced?', tab:'zerotouch', tabLabel:'Zero-Touch Rollout', answer:'Step 4, ‘generate site configuration from design inputs,’ is exactly this — a single generation engine, not manual parameter entry.', questions:[
+      "Can configuration sets be generated automatically from design inputs?",
+      "Does the same engine support different network architectures?",
+      "How are generated configurations validated?",
+      "Are inputs collected automatically or entered by hand?",
+      "Can AI/ML assist configuration generation, with validation before apply?"
+  ]},
+  {num:19, title:'Hardware detection', headline:'How is on-site hardware detected and provisioned?', tab:'zerotouch', tabLabel:'Zero-Touch Rollout', answer:'Step 2, ‘auto-discover on-site hardware via O1 plug-and-play,’ directly demonstrates this.', questions:[
+      "Can the system detect hardware automatically?",
+      "Is provisioning automated based on detected hardware?",
+      "Which hardware types are supported?",
+      "How are unexpected or mismatched components flagged?"
+  ]},
+  {num:20, title:'Validation and execution', headline:'How are scripts validated and executed?', tab:'zerotouch', tabLabel:'Zero-Touch Rollout', answer:'Steps 7-9 show configuration loaded, validated against schema, then activated — a visible gate before execution, not a skipped step.', questions:[
+      "Are generation, validation and execution a single governed pipeline?",
+      "Is validation automatic before changes are applied?",
+      "How are failures detected and handled?",
+      "Can changes be rolled back automatically on failure?"
+  ]},
+  {num:21, title:'Pre/post-launch validation', headline:'How is success measured before and after launch?', tab:'zerotouch', tabLabel:'Zero-Touch Rollout', answer:'Directly modeled: a pre-launch RF/coverage check and a post-launch KPI validation window that holds if a metric is out of bounds.', questions:[
+      "Are pre- and post-launch checks automated?",
+      "Which performance indicators are assessed?",
+      "What thresholds trigger a hold or rollback?",
+      "Are results captured for later review?",
+      "Can AI/ML anomaly detection augment fixed validation thresholds?"
+  ]},
+  {num:22, title:'Reporting and auditability', headline:'How auditable are automated processes?', tab:'zerotouch', tabLabel:'Zero-Touch Rollout', answer:'Step 13 generates a step-by-step audit report; the Configuration Management log on FCAPS Monitor separately tracks who or what made every change.', questions:[
+      "Are detailed reports generated automatically per step?",
+      "Is a complete audit trail available?",
+      "Can reports be exported for compliance?",
+      "Are reports retained and searchable over time?",
+      "Are AI/ML-driven actions logged and explainable in reports?"
+  ]},
+  {num:23, title:'Self-healing', headline:'How are closed-loop self-healing functions realised?', tab:'loop', tabLabel:'Closed Loop', answer:'The Cell Outage Compensation rApp is a live, working self-healing example — trigger an outage and watch neighboring cells auto-compensate.', questions:[
+      "Which closed loops operate autonomously?",
+      "How are policies and guardrails defined?",
+      "How is loop stability assured?",
+      "Can an operator pause or override a loop when needed?",
+      "Are AI/ML-driven healing decisions bounded by policy and override?"
+  ]},
+  {num:24, title:'Optimisation applications', headline:'How is continuous RAN optimisation delivered?', tab:'catalog', tabLabel:'rApp Catalog', answer:'Six rApps with genuine reference logic (ESM, ANR, MRO, MLB, COC, PCI) are the direct, running answer to this.', questions:[
+      "Which optimisation functions adapt continuously?",
+      "Can third-party optimisation logic run on the platform?",
+      "How are optimisation objectives configured?",
+      "How are competing optimisation goals balanced?",
+      "Can third-party AI/ML optimisation models run on the platform?"
+  ]},
+  {num:25, title:'RAN sharing independence', headline:'How is independent control supported in shared networks?', tab:null, tabLabel:null, answer:'Genuinely out of scope for a single-operator browser demo — multi-operator RAN sharing needs real tenancy boundaries this simulation doesn\'t model. Noted honestly rather than faked.', questions:[
+      "What interfaces and isolation support independent control?",
+      "Can one party\'s changes affect another\'s?",
+      "What security boundaries apply?",
+      "How are shared resources allocated and accounted for?"
+  ]},
+  {num:26, title:'Cross-party conflict', headline:'How are conflicting actions avoided in shared environments?', tab:'conflict', tabLabel:'Conflict Log', answer:'Conflict Log\'s three resolution strategies address rApp-vs-rApp conflict specifically — not multi-operator party conflict, which is a different, unmodeled problem.', questions:[
+      "How are conflicting actions detected in shared scenarios?",
+      "How are they resolved?",
+      "Are shared applications conflict-aware?",
+      "How are resolution rules agreed between parties?",
+      "Are AI/ML-driven actions from multiple parties accounted for?"
+  ]},
+  {num:27, title:'Energy efficiency', headline:'How is energy efficiency optimised?', tab:'loop', tabLabel:'Closed Loop', answer:'The ‘sleeping cell’ scenario and Energy Saving Management rApp are the live example — flagged in this demo\'s own documentation as its single most quantifiable value case.', questions:[
+      "Which energy-saving functions are available?",
+      "How are performance safeguards applied?",
+      "What efficiency gains are documented publicly?",
+      "Is energy optimisation closed-loop and reversible?",
+      "Is AI/ML-driven energy optimisation bounded by performance safeguards?"
+  ]},
+  {num:28, title:'Local autonomy', headline:'How do control loops handle dependency interruptions?', tab:'nearrt', tabLabel:'Near-RT RIC', answer:'The Near-RT RIC\'s whole reason for existing is answering this — local, fast control that doesn\'t wait on a Non-RT RIC/A1 round-trip.', questions:[
+      "Can loops operate through short dependency outages?",
+      "How much local state is retained?",
+      "How is reconciliation handled afterwards?",
+      "What is the maximum tolerated interruption before degradation?",
+      "Can AI/ML inference continue locally through short interruptions?"
+  ]},
+  {num:29, title:'Slice data model', headline:'Which standards govern the slice data model?', tab:'slice', tabLabel:'Slice Lifecycle', answer:'The Slice Intent panel\'s translated policy shows real S-NSSAI/5QI-style parameters, not an abstracted placeholder.', questions:[
+      "Which slicing standards are supported?",
+      "Is the slice model portable across vendors?",
+      "How are deviations documented?",
+      "Is the model aligned to current standard releases?"
+  ]},
+  {num:30, title:'Modular slicing architecture', headline:'How modular is the slicing architecture?', tab:'slice', tabLabel:'Slice Lifecycle', answer:'Partially — lifecycle stages are modeled, but the demo doesn\'t separately visualize NSMF/NSSMF/R-NSSMF decomposition. Worth naming as a gap, not glossing over it.', questions:[
+      "Which slice-management roles are implemented as separate components?",
+      "Can components integrate with existing orchestration?",
+      "Are the interfaces standards-based?",
+      "Can roles be adopted independently and incrementally?"
+  ]},
+  {num:31, title:'Slice lifecycle', headline:'How is the full slice lifecycle managed?', tab:'slice', tabLabel:'Slice Lifecycle', answer:'The whole tab is the direct answer: create → modify → monitor/assure → decommission, each a real, distinct stage.', questions:[
+      "Is the full slice lifecycle automated?",
+      "Is assurance built in?",
+      "Which standard interfaces are used?",
+      "How are slice modifications handled without disruption?",
+      "Can AI/ML-based assurance act across the slice lifecycle?"
+  ]},
+  {num:32, title:'Independent RAN slicing', headline:'Can RAN slice management be deployed independently?', tab:'slice', tabLabel:'Slice Lifecycle', answer:'Partially — the RAN-side slice lifecycle is shown, but independent deployability from core/transport slicing isn\'t demonstrated in this particular demo.', questions:[
+      "Can the RAN slice function deploy standalone?",
+      "Are interfaces open for later integration?",
+      "What dependencies exist?",
+      "Can it interwork with a third-party end-to-end orchestrator?"
+  ]},
+  {num:33, title:'Third-party integration', headline:'How well does slicing integrate with third parties?', tab:'import', tabLabel:'Import rApp', answer:'The whole point of Import rApp — onboarding a descriptor from outside the built-in catalog.', questions:[
+      "Are standards-based APIs exposed for external orchestrators?",
+      "Is interoperability with other vendors demonstrated?",
+      "Which standard APIs are supported?",
+      "Can third-party network elements participate in a slice?"
+  ]},
+  {num:34, title:'Application packaging', headline:'What package format do applications use?', tab:'import', tabLabel:'Import rApp', answer:'The descriptor schema (rAppId/version/requiredServices/policyType/logic) is a concrete packaging format example.', questions:[
+      "Is a standard package format used?",
+      "Is the format specification published?",
+      "Does it support third-party applications?",
+      "Are all package components fully specified?",
+      "Does the package format accommodate AI/ML model artifacts and dependencies?"
+  ]},
+  {num:35, title:'Onboarding chain', headline:'How open is the application onboarding chain?', tab:'import', tabLabel:'Import rApp', answer:'Validate → onboard → wire into closed loop is the visible chain, end to end, in the import status message.', questions:[
+      "Is the onboarding chain fully specified publicly?",
+      "Can third parties onboard without bespoke projects?",
+      "What approvals are required?",
+      "Is the onboarding process the same for first- and third-party apps?",
+      "Does onboarding handle AI/ML model provenance and lifecycle?"
+  ]},
+  {num:36, title:'Validation transparency', headline:'How transparent are onboarding validation tests?', tab:'import', tabLabel:'Import rApp', answer:'The import status message explicitly states what passed and whether the logic is genuine or a stub — nothing about validation is hidden.', questions:[
+      "Are validation tests documented?",
+      "Can developers test against them beforehand?",
+      "How are results reported?",
+      "Is the same validation applied to all suppliers equally?"
+  ]},
+  {num:37, title:'Application ecosystem', headline:'How open is the application ecosystem?', tab:'catalog', tabLabel:'rApp Catalog', answer:'Six built-in rApps plus an open import path together are the answer — a catalog that isn\'t closed to outside contributions.', questions:[
+      "Can applications come from multiple suppliers?",
+      "What enables third-party participation?",
+      "Is there a marketplace or catalogue model?",
+      "Are third-party apps treated as first-class citizens?",
+      "Are third-party AI/ML models supported with proper workflow services?"
+  ]},
+  {num:38, title:'Onboarding visibility', headline:'How visible is onboarding progress?', tab:'import', tabLabel:'Import rApp', answer:'The status dot and ‘wired into closed loop’ label on each catalog card shows onboarding state at a glance.', questions:[
+      "Is onboarding progress visible in the interface?",
+      "Are validation stages shown?",
+      "How are issues surfaced?",
+      "Is status available through an API as well as the UI?"
+  ]},
+  {num:39, title:'Application portability', headline:'How portable are applications across platforms?', tab:'scorecard', tabLabel:'Openness Scorecard', answer:'Directly measured live — the Trustworthy Automation score reflects the ratio of genuine-logic rApps to imported stubs, recalculated from real demo state.', questions:[
+      "Are applications portable across compliant platforms?",
+      "What standards underpin portability?",
+      "What switching costs remain?",
+      "Has portability been demonstrated in practice?",
+      "Are AI/ML rApps portable across compliant platforms in practice?"
+  ]},
+  {num:40, title:'Why conflict management matters', headline:'Why does conflict management matter as autonomy grows?', tab:'conflict', tabLabel:'Conflict Log', answer:'Stated directly in the tab\'s own framing: more autonomous functions acting on one network makes conflict detection non-optional, not a nice-to-have.', questions:[
+      "Is conflict management a first-class capability?",
+      "Which conflict types are addressed?",
+      "How does it scale as more applications are added?",
+      "Is it applicable across both traditional and cloud RAN?",
+      "Does conflict management account for multiple AI/ML-driven functions?"
+  ]},
+  {num:41, title:'Detecting direct conflicts', headline:'How are direct conflicts detected?', tab:'conflict', tabLabel:'Conflict Log', answer:'The ‘simulate a conflict’ button demonstrates direct, same-parameter conflict detection between two named rApps.', questions:[
+      "Are direct conflicts detected, including with external systems?",
+      "Which network types are covered?",
+      "How are detections surfaced?",
+      "How quickly are conflicts detected after they arise?"
+  ]},
+  {num:42, title:'Resolving conflicts', headline:'How are conflicts resolved?', tab:'conflict', tabLabel:'Conflict Log', answer:'All three real resolution strategies (Allow / First-Come-First-Served / Priority-Based Override) are selectable, with their actual effect logged, not just named.', questions:[
+      "Are both direct and indirect conflicts resolved?",
+      "What rules govern resolution?",
+      "Is resolution automated?",
+      "Can operators define or override resolution policy?",
+      "Can operators set resolution policy over AI/ML-driven actions?"
+  ]},
+  {num:43, title:'External-system conflicts', headline:'How are conflicts with external systems handled?', tab:'conflict', tabLabel:'Conflict Log', answer:'Partially — the demo models rApp-vs-rApp conflict, not conflict with an operator\'s own external OSS/BSS systems, which needs real integration to demonstrate properly.', questions:[
+      "Does conflict handling include external applications?",
+      "How are boundaries defined?",
+      "What coordination mechanisms exist?",
+      "How are external systems made known to the platform?"
+  ]},
+  {num:44, title:'Component hardening', headline:'How is component hardening evidenced?', tab:'trust', tabLabel:'Security & Trust', answer:'The CIS Benchmarks control shows concrete evidence text (scan results, findings remediated), not just a checkbox.', questions:[
+      "Are components benchmarked against public baselines?",
+      "Are the results available?",
+      "How often is hardening re-assessed?",
+      "Which baseline versions are used?"
+  ]},
+  {num:45, title:'Zero-trust access', headline:'How is access control designed?', tab:'trust', tabLabel:'Security & Trust', answer:'The NIST SP 800-207 control shows specific evidence (zero implicit-trust paths found) rather than an unverified claim.', questions:[
+      "Is access control based on zero-trust principles?",
+      "Is every service interaction authenticated and authorised?",
+      "How is identity verified?",
+      "Is least-privilege enforced across components?",
+      "Do zero-trust controls extend to AI/ML model and data services?"
+  ]},
+  {num:46, title:'Supply-chain integrity', headline:'How is artifact and supply-chain integrity assured?', tab:'trust', tabLabel:'Security & Trust', answer:'The ‘verify next artifact’ log directly demonstrates checking SBOM and signatures before trust is extended.', questions:[
+      "Are artifacts integrity-protected end to end?",
+      "Is provenance verifiable?",
+      "How is tampering detected?",
+      "Are software bills of materials provided?",
+      "Does supply-chain integrity extend to AI/ML models and training data?"
+  ]},
+  {num:47, title:'Compliance and auditability', headline:'How auditable is the security posture?', tab:'trust', tabLabel:'Security & Trust', answer:'The security evidence toggles plus the Configuration Management change log together show an auditable trail, not just a compliance claim.', questions:[
+      "Are controls and logs inspectable?",
+      "Is evidence available for auditors and regulators?",
+      "Which frameworks are mapped?",
+      "How long are audit logs retained?"
+  ]},
+  {num:48, title:'Multi-vendor interoperability', headline:'How is multi-vendor interoperability achieved?', tab:'ranarch', tabLabel:'RAN Architecture', answer:'The Closed Loop cell ring\'s three simulated vendors and the standard interface map together are the direct demonstration of this.', questions:[
+      "Are interfaces open and standards-based throughout?",
+      "Is interoperability demonstrated across vendors?",
+      "Which standards are conformed to?",
+      "Is conformance verified through public testing or plugfests?"
+  ]},
+  {num:49, title:'Total cost and lock-in', headline:'How should total cost of ownership and lock-in be assessed?', tab:'scorecard', tabLabel:'Openness Scorecard', answer:'Directly scored, live, tied to whether self-serve data routing has actually been demonstrated this session — not a fixed number.', questions:[
+      "What proprietary dependencies create switching cost?",
+      "Are data, applications and interfaces portable?",
+      "How predictable are ongoing operational costs?",
+      "What would it take to migrate away from the platform?"
+  ]},
+  {num:50, title:'A public-standards evaluation lens', headline:'What public-standards lens helps in evaluating an SMO platform?', tab:'docs', tabLabel:'Documentation', answer:'The Documentation tab\'s design-principles section and the Scorecard\'s six axes are this demo\'s own answer — and this Design Questions tab is the most direct answer of all.', questions:[
+      "Does the platform favour open interfaces and open data?",
+      "Is security evidenced against public benchmarks?",
+      "Does the operator retain control and portability?",
+      "Does it align with published standards rather than proprietary equivalents?",
+      "Is the platform\'s AI/ML open, transparent and operator-controlled?"
+  ]}
+];
+const DQ_GROUPS = [
+  {name:'Openness & Data Ownership', nums:[1,2,3,4,5,6,7,8]},
+  {name:'Decoupled Architecture: Cloud & Infrastructure', nums:[9,10,11,12,13,14,15,16]},
+  {name:'Trustworthy Automation: Zero-Touch', nums:[17,18,19,20,21,22]},
+  {name:'Trustworthy Automation: Self-Healing & Optimization', nums:[23,24,25,26,27,28]},
+  {name:'Safe Autonomy: Network Slicing', nums:[29,30,31,32]},
+  {name:'Safe Autonomy: Application Ecosystem', nums:[33,34,35,36,37,38,39]},
+  {name:'Safe Autonomy: Conflict Management', nums:[40,41,42,43]},
+  {name:'Security by Evidence & Freedom from Lock-In', nums:[44,45,46,47,48,49,50]}
+];
+
+/* ============================================================
+   50 DESIGN QUESTIONS
+   ============================================================ */
+let dqExpanded = {};
+function toggleDQ(num){ dqExpanded[num] = !dqExpanded[num]; renderDQ(); }
+function renderDQ(){
+  const q = document.getElementById('dqFilter').value.toLowerCase();
+  let shown = 0;
+  const html = DQ_GROUPS.map(g=>{
+    const items = g.nums.map(n=>DESIGN_QUESTIONS.find(d=>d.num===n)).filter(d=>{
+      if(!q) return true;
+      const hay = (d.title+' '+d.headline+' '+d.answer+' '+d.questions.join(' ')).toLowerCase();
+      return hay.includes(q);
+    });
+    if(items.length===0) return '';
+    shown += items.length;
+    const rows = items.map(d=>{
+      const expanded = !!dqExpanded[d.num];
+      return `
+      <div class="rapp-card" style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+          <div>
+            <div class="cat">#${d.num} / 50 &middot; ${d.title}</div>
+            <div class="name" style="font-size:13.5px;">${d.headline}</div>
+          </div>
+          ${d.tab ? `<button class="btn ghost" style="flex-shrink:0;" onclick="goToTab('${d.tab}')">View: ${d.tabLabel}</button>` : `<span class="pill fcfs" style="flex-shrink:0;">out of scope</span>`}
+        </div>
+        <div class="desc" style="margin-top:8px;color:var(--text);">${d.answer}</div>
+        <div style="margin-top:8px;">
+          <span class="term" style="cursor:pointer;font-size:11px;color:var(--cyan);border:none;" onclick="toggleDQ(${d.num})">${expanded?'&#9660; hide':'&#9654; show'} the ${d.questions.length} specific questions</span>
+          ${expanded ? `<ul style="margin:8px 0 0;padding-left:18px;font-size:11.5px;color:var(--muted);line-height:1.7;">${d.questions.map(qq=>`<li>${qq}</li>`).join('')}</ul>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+    return `<div class="card" style="margin-bottom:16px;"><h3>${g.name}</h3>${rows}</div>`;
+  }).join('');
+  document.getElementById('dqGroups').innerHTML = html || '<div class="card">No questions match that filter.</div>';
+  document.getElementById('dqCount').textContent = shown+' of 50 topics shown (224 questions total)';
+}
+renderDQ();
 
 </script>
 </body>

@@ -196,6 +196,8 @@ input[type=text],select{
 .term.below:hover::after{bottom:auto;top:135%;}
 .term.below:hover::before{bottom:auto;top:120%;border-top-color:transparent;border-bottom-color:var(--border);}
 .tab.active .term:hover{color:#1a1204;border-bottom-color:#1a1204;}
+.dq-toggle{border-bottom:1px dotted var(--faint);}
+.dq-toggle:hover{color:var(--cyan);border-bottom-color:var(--cyan);}
 
 #toastContainer{position:fixed;top:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
 .toast{
@@ -2248,7 +2250,7 @@ function renderDQ(){
         </div>
         <div class="desc" style="margin-top:8px;color:var(--text);">${d.answer}</div>
         <div style="margin-top:8px;">
-          <span class="term" style="cursor:pointer;font-size:11px;color:var(--cyan);border:none;" onclick="toggleDQ(${d.num})">${expanded?'&#9660; hide':'&#9654; show'} the ${d.questions.length} specific questions</span>
+          <span class="dq-toggle" style="cursor:pointer;font-size:11px;color:var(--cyan);" onclick="toggleDQ(${d.num})">${expanded?'&#9660; hide':'&#9654; show'} the ${d.questions.length} specific questions</span>
           ${expanded ? `<ul style="margin:8px 0 0;padding-left:18px;font-size:11.5px;color:var(--muted);line-height:1.7;">${d.questions.map(qq=>`<li>${qq}</li>`).join('')}</ul>` : ''}
         </div>
       </div>`;

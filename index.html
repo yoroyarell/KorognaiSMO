@@ -133,6 +133,12 @@ svg text{font-family:'IBM Plex Mono',monospace;}
 .btn.info:hover{filter:brightness(1.08);}
 .btn.danger{background:var(--danger);color:#2a0d0b;}
 .btn.danger:hover{filter:brightness(1.08);}
+.btn.success{background:var(--success);color:#062808;}
+.btn.success:hover{filter:brightness(1.08);}
+.btn.purple{background:#9D7CD8;color:#1a1024;}
+.btn.purple:hover{filter:brightness(1.08);}
+.btn.blue{background:#5EA8ED;color:#08182a;}
+.btn.blue:hover{filter:brightness(1.08);}
 .btn:disabled{opacity:.4;cursor:not-allowed;}
 
 .rapp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;}
@@ -513,11 +519,14 @@ input[type=text],select{
     </div>
 
     <div class="card" style="margin-top:16px;">
-      <h3>Trigger a scenario</h3>
+      <h3>Trigger a scenario <span style="font-weight:400;text-transform:none;color:var(--faint);font-size:10.5px;">(one per rApp — each condition only the matching rApp will fix)</span></h3>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <button class="btn" onclick="triggerScenario('congestion', this)">Simulate load spike</button>
-        <button class="btn info" onclick="triggerScenario('sleeping', this)">Simulate sleeping cell</button>
-        <button class="btn danger" onclick="triggerScenario('outage', this)">Simulate cell outage</button>
+        <button class="btn" onclick="triggerScenario('congestion', this)">Simulate load spike (MLB)</button>
+        <button class="btn info" onclick="triggerScenario('sleeping', this)">Simulate sleeping cell (ESM)</button>
+        <button class="btn danger" onclick="triggerScenario('outage', this)">Simulate cell outage (COC)</button>
+        <button class="btn success" onclick="triggerScenario('handover', this)">Simulate handover failures (MRO)</button>
+        <button class="btn purple" onclick="triggerScenario('neighbor', this)">Simulate missing neighbor (ANR)</button>
+        <button class="btn blue" onclick="triggerScenario('pciconflict', this)">Simulate PCI collision (PCI)</button>
         <button class="btn ghost" onclick="triggerScenario('reset', this)">Reset to nominal</button>
       </div>
     </div>
@@ -1028,7 +1037,9 @@ function initCells(){
       hoFail: 0.5+Math.random()*1.5,
       rsrp: -85+Math.random()*10,
       state:'nominal', // nominal | congested | alarm
-      remediating:false,
+      remediatingUntil:0,
+      missingNeighbor:false,
+      pciConflict:false,
       lastAction:null
     });
   }
@@ -1062,7 +1073,7 @@ const RAPPS = {
     tags:['CM','Cross-EMS','R1: RAN NF OAM'],
     algorithm:'anr-neighbor-discovery',
     params:{staleRelationDays:30},
-    enabled:false
+    enabled:true
   },
   'mro': {
     name:'Mobility Robustness Optimization', cat:'MRO',
@@ -1078,7 +1089,7 @@ const RAPPS = {
     tags:['PM','Congestion offload','R1: RAN NF OAM'],
     algorithm:'load-balancing-offload',
     params:{prbCongestionThreshold:75, offloadStepPct:10},
-    enabled:false
+    enabled:true
   },
   'coc': {
     name:'Cell Outage Compensation', cat:'COC · Self-Healing',
@@ -1094,7 +1105,7 @@ const RAPPS = {
     tags:['CM','Conflict-free reuse','R1: RAN NF OAM'],
     algorithm:'pci-reuse-optimization',
     params:{reuseDistanceKm:3},
-    enabled:false
+    enabled:true
   }
 };
 
@@ -1172,6 +1183,16 @@ function runRappLogic(rapp, cell){
         return {action:`Neighbor tilt adjusted -${2}° to compensate coverage hole`, effect:()=>{cell.state='congested'; cell.prb=60;} };
       }
       break;
+    case 'anr-neighbor-discovery':
+      if(cell.missingNeighbor){
+        return {action:`Missing neighbor relation discovered and added across EMS boundary (stale threshold ${rapp.params.staleRelationDays}d)`, effect:()=>{cell.missingNeighbor=false;} };
+      }
+      break;
+    case 'pci-reuse-optimization':
+      if(cell.pciConflict){
+        return {action:`PCI collision detected and resolved — reassigned within ${rapp.params.reuseDistanceKm}km reuse distance, PRACH consistency verified`, effect:()=>{cell.pciConflict=false;} };
+      }
+      break;
   }
   return null;
 }
@@ -1179,10 +1200,20 @@ function runRappLogic(rapp, cell){
 /* ============================================================
    SIMULATION LOOP
    ============================================================ */
+const RAPP_PRIORITY = {coc:1, mro:2, mlb:3, esm:4, anr:5, pci:6}; // lower = higher priority, used only by the Priority-Based Override strategy
+function applyRappResult(cell, rapp, result, justTriggered){
+  cell.remediatingUntil = Date.now() + 2600; // keep the cyan "acting now" indicator visible for a few seconds, not just this tick
+  result.effect();
+  cell.lastAction = rapp.name;
+  autoFixedCount++;
+  if(justTriggered || tick % 3 === 0){ // always log the fix for a scenario you just triggered; otherwise throttle log spam
+    logLine('loopLog', `[${cell.id}] ${rapp.name}: ${result.action}`, 'act');
+    logLine('loopLogPlain', narrate(rapp.algorithm, cell.id, rapp.name, rapp.imported && !VALID_ALGORITHMS.includes(rapp.algorithm)), 'act');
+  }
+}
 let tick = 0;
 function stepSimulation(){
   tick++;
-  let remediating = 0;
   cells.forEach(cell=>{
     // drift
     if(cell.state!=='alarm'){
@@ -1194,31 +1225,47 @@ function stepSimulation(){
     if(cell.prb>78 && cell.state==='nominal') cell.state='congested';
     if(cell.prb<=78 && cell.hoFail<3 && cell.state==='congested') cell.state='nominal';
 
-    // run enabled rApps against this cell
-    Object.values(RAPPS).forEach(rapp=>{
+    // collect every enabled rApp that wants to act on this cell this cycle, without applying anything yet
+    const matches = [];
+    Object.entries(RAPPS).forEach(([key,rapp])=>{
       if(!rapp.enabled) return;
       const result = runRappLogic(rapp, cell);
-      if(result){
-        cell.remediating = true;
-        remediating++;
-        result.effect();
-        cell.lastAction = rapp.name;
-        autoFixedCount++;
-        if(tick % 3 === 0){ // throttle log spam
-          logLine('loopLog', `[${cell.id}] ${rapp.name}: ${result.action}`, 'act');
-          logLine('loopLogPlain', narrate(rapp.algorithm, cell.id, rapp.name, rapp.imported && !VALID_ALGORITHMS.includes(rapp.algorithm)), 'act');
-        }
-      }
+      if(result) matches.push({key, rapp, result});
     });
-    if(cell.prb<70 && cell.hoFail<3 && cell.state!=='alarm') cell.remediating=false;
+    if(matches.length===0) return;
+
+    const justTriggered = cell.justTriggered && (Date.now()-cell.justTriggered < 4000);
+
+    if(matches.length===1){
+      applyRappResult(cell, matches[0].rapp, matches[0].result, justTriggered);
+      return;
+    }
+
+    // genuine conflict: more than one enabled rApp wants to act on the same cell in the same cycle
+    const strat = document.getElementById('strategySelect') ? document.getElementById('strategySelect').value : 'fcfs';
+    const names = matches.map(m=>`"${m.rapp.name}"`);
+    logLine('conflictLog', `Conflict detected on ${cell.id}: ${names.join(' and ')} both want to act this cycle`, 'conf');
+    if(strat==='allow'){
+      logLine('conflictLog', `Strategy = Allow → all ${matches.length} actions applied on ${cell.id}; SMO will monitor resulting KPI drift`, 'warn');
+      matches.forEach(m=>applyRappResult(cell, m.rapp, m.result, justTriggered));
+    } else if(strat==='fcfs'){
+      logLine('conflictLog', `Strategy = First-Come-First-Served → "${matches[0].rapp.name}" acted first and is retained on ${cell.id}; ${matches.slice(1).map(m=>'"'+m.rapp.name+'"').join(', ')} rejected for cooldown window`, 'act');
+      applyRappResult(cell, matches[0].rapp, matches[0].result, justTriggered);
+    } else {
+      const ranked = [...matches].sort((a,b)=>(RAPP_PRIORITY[a.key]||9)-(RAPP_PRIORITY[b.key]||9));
+      const winner = ranked[0], losers = ranked.slice(1);
+      logLine('conflictLog', `Strategy = Priority-Based Override → "${winner.rapp.name}" (priority ${RAPP_PRIORITY[winner.key]||'-'}) overrides ${losers.map(m=>'"'+m.rapp.name+'" (priority '+(RAPP_PRIORITY[m.key]||'-')+')').join(', ')} on ${cell.id}`, 'act');
+      applyRappResult(cell, winner.rapp, winner.result, justTriggered);
+    }
   });
 
-  updateKpis(remediating);
+  updateKpis();
   drawRing();
 }
 setInterval(stepSimulation, 1400);
 
-function updateKpis(remediating){
+function isRemediating(cell){ return cell.remediatingUntil && Date.now() < cell.remediatingUntil; }
+function updateKpis(){
   const avgPrb = cells.reduce((a,c)=>a+c.prb,0)/cells.length;
   const avgHo = cells.reduce((a,c)=>a+c.hoFail,0)/cells.length;
   const prbEl = document.querySelector('#kpiPrb .val');
@@ -1229,7 +1276,7 @@ function updateKpis(remediating){
   document.getElementById('kpiHo').className = 'kpi '+(avgHo>3?'bad':avgHo>1.8?'warn':'ok');
   document.querySelector('#kpiPrbTrend').textContent = `across ${cells.length} cells · vendors: ${VENDORS.join(', ')}`;
   document.querySelector('#kpiHoTrend').textContent = `3GPP-style handover failure ratio`;
-  document.querySelector('#kpiRem .val').textContent = remediating;
+  document.querySelector('#kpiRem .val').textContent = cells.filter(isRemediating).length;
 }
 
 /* ============================================================
@@ -1247,17 +1294,18 @@ function drawRing(){
   cells.forEach(cell=>{
     const x = cx + r*Math.cos(cell.angle);
     const y = cy + r*Math.sin(cell.angle);
+    const remediating = isRemediating(cell);
     let color = '#3FB950';
     if(cell.state==='congested') color='#F2A93B';
     if(cell.state==='alarm') color='#F85149';
-    if(cell.remediating) color='#4FD1C5';
+    if(remediating) color='#4FD1C5';
 
-    parts.push(`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="${cell.remediating?'#4FD1C5':'#2A323D'}" stroke-width="${cell.remediating?1.6:1}" opacity="${cell.remediating?0.9:0.5}"/>`);
+    parts.push(`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="${remediating?'#4FD1C5':'#2A323D'}" stroke-width="${remediating?1.6:1}" opacity="${remediating?0.9:0.5}"/>`);
     if(cell.justTriggered){
       parts.push(`<circle cx="${x}" cy="${y}" r="13" fill="none" stroke="#F85149" stroke-width="2.5"><animate attributeName="r" values="13;30" dur="0.9s" repeatCount="2"/><animate attributeName="opacity" values="0.9;0" dur="0.9s" repeatCount="2"/></circle>`);
     }
     parts.push(`<circle cx="${x}" cy="${y}" r="16" fill="none" stroke="${VENDOR_COLORS[cell.vendor]}" stroke-width="2" opacity="0.9"/>`);
-    parts.push(`<circle cx="${x}" cy="${y}" r="13" fill="${color}" opacity="0.9"><title>${cell.id} (${cell.vendor}) — ${cell.state}${cell.remediating?' · rApp action in progress':''}\nPRB: ${cell.prb.toFixed(0)}% · HO fail: ${cell.hoFail.toFixed(1)}%${cell.lastAction?'\nLast action: '+cell.lastAction:''}</title>${cell.remediating?'<animate attributeName="r" values="13;17;13" dur="1.2s" repeatCount="indefinite"/>':''}</circle>`);
+    parts.push(`<circle cx="${x}" cy="${y}" r="13" fill="${color}" opacity="0.9"><title>${cell.id} (${cell.vendor}) — ${cell.state}${remediating?' · rApp action in progress':''}\nPRB: ${cell.prb.toFixed(0)}% · HO fail: ${cell.hoFail.toFixed(1)}%${cell.lastAction?'\nLast action: '+cell.lastAction:''}</title>${remediating?'<animate attributeName="r" values="13;17;13" dur="1.2s" repeatCount="indefinite"/>':''}</circle>`);
     parts.push(`<text x="${x}" y="${y+3}" text-anchor="middle" font-size="8" fill="#0D1117" font-weight="600">${cell.id.split('-')[1]}</text>`);
   });
   svg.innerHTML = parts.join('');
@@ -1397,6 +1445,9 @@ function triggerScenario(type, btn){
   if(type==='congestion'){ c.prb = 88; c.state='congested'; logLine('loopLog',`[${c.id}] Load spike injected — PRB now ${c.prb}%`,'warn'); showToast(`⚡ Load spike injected on ${c.id} — PRB now 88%`, 'warn'); }
   if(type==='sleeping'){ c.prb = 8; c.state='nominal'; logLine('loopLog',`[${c.id}] Sustained low utilization injected — PRB now ${c.prb}%`,'warn'); showToast(`💤 Sleeping-cell condition injected on ${c.id} — PRB now 8%`, 'warn'); }
   if(type==='outage'){ c.state='alarm'; c.prb=95; logLine('loopLog',`[${c.id}] FM alarm raised — site outage detected`,'conf'); showToast(`🚨 Outage injected on ${c.id} — FM alarm raised`, 'danger'); }
+  if(type==='handover'){ c.hoFail = 5.5; logLine('loopLog',`[${c.id}] Handover failure rate spiked — HO fail now ${c.hoFail.toFixed(1)}%`,'warn'); showToast(`📶 Handover failures injected on ${c.id} — HO fail now 5.5%`, 'warn'); }
+  if(type==='neighbor'){ c.missingNeighbor = true; logLine('loopLog',`[${c.id}] Missing neighbor relation detected across EMS boundary`,'warn'); showToast(`🔗 Missing neighbor relation injected on ${c.id}`, 'warn'); }
+  if(type==='pciconflict'){ c.pciConflict = true; logLine('loopLog',`[${c.id}] PCI collision detected with an adjacent cell`,'warn'); showToast(`⚠️ PCI collision injected on ${c.id}`, 'warn'); }
   drawRing();
   setTimeout(()=>{ c.justTriggered=null; drawRing(); }, 2500);
 }

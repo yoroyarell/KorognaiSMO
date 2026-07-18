@@ -342,8 +342,8 @@ input[type=text],select{
   .wrap{padding:0 14px 40px;}
   .header{flex-direction:column;align-items:stretch;gap:14px;}
   .header .badge{position:static;align-self:flex-start;order:2;}
-  .header > div:first-child{order:1;}
-  .header > div:last-child{order:3;margin-top:0;width:100%;align-items:stretch !important;}
+  .header > div:first-child{order:1;flex:none !important;width:100%;max-width:none !important;}
+  .header > div:last-child{order:3;margin-top:0;width:100%;align-items:stretch !important;flex:none;}
   .future-card{max-width:100%;width:100%;min-width:0;}
   .future-card-text{min-width:0;}
   .future-card-title,.future-card-sub{white-space:normal;}
